@@ -1,13 +1,13 @@
 export interface SentimentData {
   issueKey: string;
-  teamId: string;
-  sprintProject: string;
-  updated: string;
+  teamId: number;
+  sprint: string;
+  updated: Date;
   reasonForSuccessRateThemes: string;
   whatDidNotGoWellThemes: string;
   whatWentWellThemes: string;
   reasonForChurnThemes: string;
-  domain: string;
+  Domain: string;
   whatDidNotGoWell: string;
   whatWentWell: string;
   reasonToChurn: string;
@@ -15,6 +15,8 @@ export interface SentimentData {
   reasonForSuccessRate: string;
   comments: string;
   sentimentScore: number;
+  whatWentWellScore: number,
+  whatDidNotGoWellScore: number;
 }
 
 export interface KPICard {

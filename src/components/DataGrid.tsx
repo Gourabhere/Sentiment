@@ -8,7 +8,7 @@ interface DataGridProps {
 const getSentimentEmoji = (score: number) => {
   if (score >= 0.7) return '😊';
   if (score >= 0.3) return '😐';
-  return '😠';
+  return '😞';
 };
 
 const getRAGColor = (score: number) => {
@@ -55,30 +55,32 @@ const DataGrid: React.FC<DataGridProps> = ({ data }) => {
         <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
           {data.map((row, index) => (
             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                {row.nameKey}
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                {row.issueKey}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-400">
                 {row.teamId}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                {row.projectId}
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-400">
+                {row.sprint}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {row.updatedDate}
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                {row.updated.toString()}
               </td>
               <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">
                 <div className="max-w-xs overflow-hidden text-ellipsis">
-                  {row.description}
+                  {row.whatWentWell}
                 </div>
               </td>
               <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">
                 <div className="max-w-xs overflow-hidden text-ellipsis">
-                  {row.description}
+                  {row.whatDidNotGoWell}
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {row.reviewCategory}
+              <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">
+                <div className="max-w-xs overflow-hidden text-ellipsis">
+                  {row.Domain}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                 {row.sentimentScore.toFixed(2)} {getSentimentEmoji(row.sentimentScore)}

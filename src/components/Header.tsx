@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sun, Moon, Upload } from 'lucide-react';
-
+import Toggle from './Toggle';
 interface HeaderProps {
   isDarkMode: boolean;
   toggleDarkMode: () => void;
@@ -38,13 +38,13 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleDarkMode, onFileUploa
             Upload Excel
           </label>
         </div>
-        
-        <button
-          onClick={toggleDarkMode}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        >
-          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
+         <Toggle
+            onClick={toggleDarkMode}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </Toggle>
+
       </div>
     </header>
   );
