@@ -27,6 +27,10 @@ export interface KPICard {
 }
 
 export interface ChartData {
+  x: string | number | undefined;
+  y: string | number | undefined;
+  width: string | number | undefined;
+  height: string | number | undefined;
   name: string;
   value: number;
 }

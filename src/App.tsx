@@ -5,14 +5,13 @@ import Header from './components/Header';
 import KPICard from './components/KPICard';
 import SentimentChart from './components/SentimentChart';
 import DataGrid from './components/DataGrid';
-import VADER from 'sentiment';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import Sentiment from 'sentiment';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import FilterSection from './components/FilterSection';
 import { ChartData, SentimentData } from './types';
 
-
 // Initialize sentiment analysis
-const sentiment = new VADER();
+const sentiment = new Sentiment();
 
 const analyzeSentiment = (text: string): number => {
     return sentiment.analyze(text).score;
@@ -20,10 +19,7 @@ const analyzeSentiment = (text: string): number => {
 
 const calculateFinalSentimentScore = (whatWentWell: string, whatDidNotGoWell: string): number => {
     let score = analyzeSentiment(whatWentWell) - analyzeSentiment(whatDidNotGoWell);
-    console.log(typeof analyzeSentiment(whatWentWell));
-    console.log(typeof analyzeSentiment(whatDidNotGoWell));
     return Math.max(-1, Math.min(1, score));
-
 };
 
 
@@ -34,7 +30,12 @@ function App() {
   
   const toggleDarkMode = () => {
     setIsDarkMode(prevIsDarkMode => !prevIsDarkMode);
-    document.documentElement.classList.toggle('dark');
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark');
+    }
+    else {
+      document.documentElement.classList.add('dark');
+    }
   };
 
   const handleFileUpload = async (file: File) => {
@@ -58,13 +59,13 @@ function App() {
         Domain: row.Domain || '',
         whatDidNotGoWell: row.What_did_not_go_well || '',
         whatWentWell: row.What_went_well || '',
-        reasonToChurn: row.Reason_to_Churn || '',
-        improvementOpportunity: row.improvement_opportunity || '', 
-        reasonForSuccessRate: row.reason_for_success_rate || '',
+        reasonToChurn: row.ReasontoChurn || '',
+        improvementOpportunity: row.improvementOpportunity || '', 
+        reasonForSuccessRate: row.reasonForSuccessRate || '',
         comments: row.comments || '',
-        sentimentScore: calculateFinalSentimentScore(row.What_went_well || '', row.What_did_not_go_well || ''),
-        whatWentWellScore: analyzeSentiment(row.What_went_well || ''),
-        whatDidNotGoWellScore: analyzeSentiment(row.What_did_not_go_well || '')
+        sentimentScore: calculateFinalSentimentScore(row.What_went_well, row.What_did_not_go_well),
+        whatWentWellScore: analyzeSentiment(row.What_went_well),
+        whatDidNotGoWellScore: analyzeSentiment(row.What_did_not_go_well)
         }));
 
       
@@ -81,13 +82,12 @@ function App() {
     sprint: string;
     sentiment: string[];
     Domain: string;
-  }) => {
+    theme: string[];
+}) => {
     let filtered = [...data];
 
     if (filters.teamId) {
-      filtered = filtered.filter(item => 
-        filters.teamId.includes(item.teamId.toString())
-      );
+      filtered = filtered.filter(item => item.teamId.toString() === filters.teamId);
     }
 
     if (filters.sprint) {
@@ -95,6 +95,19 @@ function App() {
         filters.sprint.includes(item.sprint)
       );
     }
+
+    if (filters.theme.length > 0) {
+      filtered = filtered.filter(item => {
+          const itemThemes = [
+              ...(item.reasonForSuccessRateThemes || []),
+              ...(item.whatDidNotGoWellThemes || []),
+              ...(item.whatWentWellThemes || []),
+              ...(item.reasonForChurnThemes || [])
+          ];
+          return filters.theme.some(theme => itemThemes.includes(theme));
+      });
+    }
+
 
     if (filters.sentiment.length > 0) {
       filtered = filtered.filter(item => {
@@ -144,23 +157,62 @@ function App() {
   ];
 
   const sentimentDistribution = [
-    { name: 'Positive', value: filteredData.filter(d => d.sentimentScore > 0).length },
-    { name: 'Neutral', value: filteredData.filter(d => d.sentimentScore = 0).length },
-    { name: 'Negative', value: filteredData.filter(d => d.sentimentScore < 0).length }
+    { name: 'Positive', value: filteredData.filter(d => d.whatWentWellScore > 0).length },
+    { name: 'Neutral',  value: filteredData.filter(d => 
+      d.whatWentWellScore === 0 ||  // Either what went well is neutral
+      d.whatDidNotGoWellScore === 0 // OR what didn't go well is neutral
+    ).length  },
+    { name: 'Negative', value: filteredData.filter(d => d.whatDidNotGoWellScore < 0).length }
   ];
 
   const teamSentimentData: ChartData[] = [
-    { name: 'What went well', value: filteredData.reduce((acc, curr) => acc + curr.whatWentWellScore, 0) },
-    { name: 'What did not go well', value: filteredData.reduce((acc, curr) => acc + curr.whatDidNotGoWellScore, 0) },
+    {
+      name: 'Positive', value: filteredData.length ? filteredData.reduce((acc, curr) => acc + curr.whatWentWellScore, 0) / filteredData.length : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined
+    },
+    {
+      name: 'Negetive', value: filteredData.length ? filteredData.reduce((acc, curr) => acc + curr.whatDidNotGoWellScore, 0) / filteredData.length : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined
+    },
   ];
 
   const TeamSentimentBarChart: React.FC<{ data: ChartData[] }> = ({ data }) => { 
     return (
-      <BarChart width={500} height={300} data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} >
-        <CartesianGrid strokeDasharray="3 3" /> <XAxis dataKey="name" /> <YAxis /> <Tooltip /> <Legend /> <Bar dataKey="value" fill="#8884d8" />
-      </BarChart>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart
+          data={data}
+          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis 
+            dataKey="name" 
+            tick={{ fill: isDarkMode ? '#fff' : '#333' }}
+          />
+          <YAxis domain={[-1, 1]} tick={{ fill: isDarkMode ? '#fff' : '#333' }} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: isDarkMode ? '#1F2937' : '#fff',
+              borderColor: isDarkMode ? '#374151' : '#e5e7eb'
+            }}
+            itemStyle={{ color: isDarkMode ? '#fff' : '#333' }}
+            formatter={(value: number) => [value.toFixed(2), 'Score']}
+          />
+          <Bar dataKey="value">
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.name === 'Positive' ? '#4CAF50' : '#f44336'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     );
   };
+
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
       <Header
@@ -201,7 +253,14 @@ function App() {
               Detailed Analysis
             </h2>
           </div>
-          <DataGrid data={filteredData} />
+          <DataGrid data={filteredData} filters={{
+            teamId: 0,
+            sprint: '',
+            sentiment: [],
+            Domain: '',
+            theme: [],
+            improvementOpportunity: '',
+          }} />
         </div>
       </main>
     </div>
