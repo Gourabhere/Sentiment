@@ -30,7 +30,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({ data, onFilterChange }) =
     { value: '', label: 'All Themes' },
     { value: 'Reason For Success Rate Themes', label: 'Reason For Success Rate Themes' },
     { value: 'What Did Not Go Well Themes', label: 'What Did Not Go Well Themes' },
-    { value: 'What Went Well Themes', label: 'What Went Well Themes' },
+    { value: 'whatWentWellThemes', label: 'whatWentWellThemes' },
     { value: 'ReasonForChurnThemes', label: 'ReasonForChurnThemes' },
   ];
 

@@ -28,10 +28,13 @@ const getRAGColor = (score: number) => {
 };
 
 const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
+  
   // Log filters for debugging
   console.log('Filters in DataGrid:', filters);
+  
   // Normalize filters.theme to handle both single-select (string) and multi-select (string[])
   const selectedThemes = Array.isArray(filters.theme) ? filters.theme : [filters.theme || ''];
+  
   // Filter data based on all filters except themes (themes will be handled separately)
   const filteredData = data.filter(item => {
     const matchesTeamId = !filters.teamId || item.teamId === filters.teamId;
@@ -39,11 +42,13 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
     const matchesDomain = !filters.Domain || item.Domain === filters.Domain;
     return matchesTeamId && matchesSprint && matchesDomain;
   });
+  
   // Determine which columns to show based on selected themes
   const showReasonForSuccess = selectedThemes.includes('reasonForSuccessRate');
   const showWhatDidNotGoWell = selectedThemes.includes('What Did Not Go Well Themes');
-  const showWhatWentWell = selectedThemes.includes('What Went Well Themes');
+  const showWhatWentWell = selectedThemes.includes('whatWentWellThemes');
   const showReasonForChurn = selectedThemes.includes('ReasonForChurnThemes');
+  
   // If no themes are selected or "All Themes" is selected, show all relevant columns
   const hasSelectedThemes = selectedThemes.length > 0 && !selectedThemes.includes('');
   const displayData = hasSelectedThemes
@@ -51,12 +56,13 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
         return (
           (showReasonForSuccess && item.reasonForSuccessRate) ||
           (showWhatDidNotGoWell && item.whatDidNotGoWell) ||
-          (showWhatWentWell && item.whatWentWell) ||
+          (showWhatWentWell && item.whatWentWellThemes) ||
           (showReasonForChurn && item.reasonToChurn)
         );
       })
     : filteredData;
-  // Log displayData for debugging
+  
+    // Log displayData for debugging
   console.log('Display Data:', displayData);
   if (displayData.length === 0) {
     return (
@@ -99,6 +105,9 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
             improvementOpportunity
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            whatWentWellThemes
             </th>
             {showReasonForSuccess && (
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -168,6 +177,12 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
                   {row.improvementOpportunity}
                 </div>
               </td>
+              <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">
+                <div className="max-w-xs overflow-hidden text-ellipsis">
+                  {row.whatWentWellThemes
+}
+                </div>
+              </td>
               {showWhatDidNotGoWell && (
                 <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">
                   <div className="max-w-xs overflow-hidden text-ellipsis">
@@ -178,7 +193,7 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
               {showWhatWentWell && (
                 <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">
                   <div className="max-w-xs overflow-hidden text-ellipsis">
-                    {row.whatWentWell || '-'}
+                    {row.whatWentWellThemes || '-'}
                   </div>
                 </td>
               )}

@@ -54,7 +54,7 @@ function App() {
         updated: row.updated || '',
         reasonForSuccessRateThemes: row.Reason_for_reported_success_rate_Themes || '',
         whatDidNotGoWellThemes: row.What_did_not_go_well_Themes || '', 
-        whatWentWellThemes: row.What_went_well_Themes || '', 
+        whatWentWellThemes: row.whatWentWellThemes || '', 
         reasonForChurnThemes: row.Rason_for_Churn_Themes || '',
         Domain: row.Domain || '',
         whatDidNotGoWell: row.What_did_not_go_well || '',
