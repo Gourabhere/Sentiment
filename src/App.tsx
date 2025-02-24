@@ -18,8 +18,8 @@ const analyzeSentiment = (text: string): number => {
 };
 
 const calculateFinalSentimentScore = (whatWentWell: string, whatDidNotGoWell: string): number => {
-    let score = analyzeSentiment(whatWentWell) - analyzeSentiment(whatDidNotGoWell);
-    return Math.max(-1, Math.min(1, score));
+    let score = analyzeSentiment(whatWentWell) + analyzeSentiment(whatDidNotGoWell);
+    return score; //Math.max(-1, Math.min(1, score));
 };
 
 

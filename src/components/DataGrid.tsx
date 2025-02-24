@@ -91,9 +91,9 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Domain
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Sentiment
-            </th>
+            </th> */}
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Status
             </th>
@@ -152,13 +152,16 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
                   {row.Domain}
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                {row.sentimentScore.toFixed(2)} {getSentimentEmoji(row.sentimentScore)}
-              </td>
+              {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+                {row.sentimentScore?.toFixed(2) || '0.00'} {getSentimentEmoji(row.sentimentScore || 0)}
+              </td> */}
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRAGColor(row.sentimentScore)}`}>
-                  &nbsp;
+                <span
+                  className={`inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-md ${getRAGColor(row.sentimentScore || 0)} text-white`}
+                >
+                  {row.sentimentScore?.toFixed(2) || '0.00'} 
                 </span>
+                {getSentimentEmoji(row.sentimentScore || 0)}
               </td>
               <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">
                 <div className="max-w-xs overflow-hidden text-ellipsis">
