@@ -161,7 +161,7 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
                 >
                   {row.sentimentScore?.toFixed(2) || '0.00'} 
                 </span>
-                {getSentimentEmoji(row.sentimentScore || 0)}
+                {' '}{getSentimentEmoji(row.sentimentScore || 0)}
               </td>
               <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">
                 <div className="max-w-xs overflow-hidden text-ellipsis">
