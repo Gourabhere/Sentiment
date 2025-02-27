@@ -46,7 +46,7 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
   // Determine which columns to show based on selected themes
   const showReasonForSuccess = selectedThemes.includes('reasonForSuccessRate');
   const showWhatDidNotGoWell = selectedThemes.includes('What Did Not Go Well Themes');
-  const showWhatWentWell = selectedThemes.includes('whatWentWellThemes');
+  const showWhatWentWell = selectedThemes.includes('What_went_well_Themes');
   const showReasonForChurn = selectedThemes.includes('ReasonForChurnThemes');
   
   // If no themes are selected or "All Themes" is selected, show all relevant columns
@@ -107,7 +107,7 @@ const DataGrid: React.FC<DataGridProps> = ({ data, filters }) => {
             improvementOpportunity
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-            whatWentWellThemes
+            What_went_well_Themes
             </th>
             {showReasonForSuccess && (
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
