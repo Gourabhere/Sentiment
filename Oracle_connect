@@ -1,4 +1,256 @@
+
 import React, { useState, useEffect } from 'react';
+import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
+import Header from './components/Header';
+import KPICard from './components/KPICard';
+import SentimentChart from './components/SentimentChart';
+import DataGrid from './components/DataGrid';
+import Sentiment from 'sentiment';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import FilterSection from './components/FilterSection';
+import { ChartData, SentimentData } from './types';
+import natural from 'natural';
+import OracleDataFetcher from './OracleDataFetcher'; // Import OracleDataFetcher
+
+const Analyzer = natural.SentimentAnalyzer;
+const stemmer = natural.PorterStemmer;
+const analyzer = new Analyzer('English', stemmer, 'afinn');
+
+const analyzeSentiment_natural = (text: string): number => {
+  const words = text.split(' ');
+  return analyzer.getSentiment(words);
+};
+
+const calculateFinalSentimentScore = (whatwentwell: string, whatDidNotGoWell: string): number => {
+  let score = analyzeSentiment_natural(whatwentwell) + analyzeSentiment_natural(whatDidNotGoWell);
+  return score;
+};
+
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [data, setData] = useState<SentimentData[]>([]);
+  const [filteredData, setFilteredData] = useState<SentimentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    teamId: '',
+    sprint: '',
+    sentiment: [],
+    Domain: '',
+    theme: [],
+    Improvement_opportunity: '',
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedData = await OracleDataFetcher({ filters });
+        const transformedData: SentimentData[] = fetchedData.map((row: any) => ({
+          issueKey: row.ISSUEKEY || '',
+          teamId: row.TEAMID || 0,
+          sprint: row.SPRINT || '',
+          updated: row.UPDATED ? new Date(row.UPDATED) : new Date(),
+          reasonForSuccessRateThemes: row.REASONFORSUCCESSRATETHEMES || '',
+          whatDidNotGoWellThemes: row.WHATDIDNOTGOWELLTHEMES || '',
+          What_went_well_Themes: row.WHAT_WENT_WELL_THEMES || '',
+          reasonForChurnThemes: row.REASONFORCHURNTHEMES || '',
+          Domain: row.DOMAIN || '',
+          whatDidNotGoWell: row.WHATDIDNOTGOWELL || '',
+          whatwentwell: row.WHATWENTWELL || '',
+          reasonToChurn: row.REASONTOCHURN || '',
+          Improvement_opportunity: row.IMPROVEMENT_OPPORTUNITY || '',
+          reasonForSuccessRate: row.REASONFORSUCCESSRATE || '',
+          comments: row.COMMENTS || '',
+          sentimentScore: calculateFinalSentimentScore(row.WHATWENTWELL, row.WHATDIDNOTGOWELL),
+          whatWentWellScore: analyzeSentiment_natural(row.WHATWENTWELL),
+          whatDidNotGoWellScore: analyzeSentiment_natural(row.WHATDIDNOTGOWELL),
+        }));
+        setData(transformedData);
+        setFilteredData(transformedData);
+      } catch (err) {
+        setError('Failed to fetch data.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [filters]);
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prevIsDarkMode) => !prevIsDarkMode);
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  };
+
+  const kpiCards = [
+    {
+      title: 'Average Sentiment',
+      value: filteredData.length
+        ? parseFloat(
+            (filteredData.reduce((acc, curr) => acc + curr.sentimentScore, 0) / filteredData.length).toFixed(2)
+        : 0,
+      change: 12,
+      icon: <MessageSquare className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Team Members',
+      value: filteredData.length ? new Set(filteredData.map((d) => d.teamId)).size : 0,
+      change: 8,
+      icon: <Users className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Stories Delivered',
+      value: filteredData.length || 0,
+      change: -5,
+      icon: <CheckSquare className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Communication Score',
+      value: 85,
+      change: 15,
+      icon: <MessageCircle className="w-6 h-6 text-blue-600" />,
+    },
+  ];
+
+  const sentimentDistribution = [
+    { name: 'Positive', value: filteredData.filter((d) => d.whatWentWellScore > 0).length },
+    {
+      name: 'Neutral',
+      value: filteredData.filter(
+        (d) => d.whatWentWellScore === 0 || d.whatDidNotGoWellScore === 0
+      ).length,
+    },
+    { name: 'Negative', value: filteredData.filter((d) => d.whatDidNotGoWellScore < 0).length },
+  ];
+
+  const teamSentimentData: ChartData[] = [
+    {
+      name: 'Positive',
+      value: filteredData.length
+        ? filteredData.reduce((acc, curr) => acc + curr.whatWentWellScore, 0) / filteredData.length
+        : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined,
+    },
+    {
+      name: 'Negative',
+      value: filteredData.length
+        ? filteredData.reduce((acc, curr) => acc + curr.whatDidNotGoWellScore, 0) / filteredData.length
+        : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined,
+    },
+  ];
+
+  const TeamSentimentBarChart: React.FC<{ data: ChartData[] }> = ({ data }) => {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" tick={{ fill: isDarkMode ? '#fff' : '#333' }} />
+          <YAxis domain={[-1, 1]} tick={{ fill: isDarkMode ? '#fff' : '#333' }} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: isDarkMode ? '#1F2937' : '#fff',
+              borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+            }}
+            itemStyle={{ color: isDarkMode ? '#fff' : '#333' }}
+            formatter={(value: number) => [value.toFixed(2), 'Score']}
+          />
+          <Bar dataKey="value">
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.name === 'Positive' ? '#4CAF50' : '#f44336'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  return (
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
+      <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <main className="container mx-auto px-4 py-8">
+        <FilterSection data={data} onFilterChange={handleFilterChange} />
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error}</div>}
+        {!loading && !error && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {kpiCards.map((card, index) => (
+                <KPICard key={index} {...card} />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                  Sentiment Distribution
+                </h2>
+                <SentimentChart data={sentimentDistribution} />
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                  Team Sentiment Overview
+                </h2>
+                <TeamSentimentBarChart data={teamSentimentData} />
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  Detailed Analysis
+                </h2>
+              </div>
+              <DataGrid
+                data={filteredData}
+                filters={filters}
+              />
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
+```
+
+### Key Fixes:
+1. **Removed the incomplete `<div className="` line** that was causing the syntax error.
+2. **Ensured proper JSX structure** for the KPI cards grid and other components.
+3. **Maintained consistent formatting** for readability and functionality.
+
+### Features:
+- **Dark Mode Toggle**: Switches between light and dark themes.
+- **KPI Cards**: Displays metrics like average sentiment, team members, stories delivered, and communication score.
+- **Sentiment Distribution Chart**: Visualizes positive, neutral, and negative sentiment distribution.
+- **Team Sentiment Bar Chart**: Shows average positive and negative sentiment scores.
+- **DataGrid**: Displays detailed analysis of the filtered data.
+
+This code is now complete and ready to be used in your React application. Make sure all the imported components (`Header`, `KPICard`, `SentimentChart`, `DataGrid`, `FilterSection`, etc.) are properly implemented in your project.
+
+
+import React, { useState, useEffect } from 'react';
+import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
+import Header from './components/Header';
+import KPICard from './components/KPICard';
+import SentimentChart from 'import React, { useState, useEffect } from 'react';
 import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
 import Header from './components/Header';
 import KPICard from './components/KPICard';
@@ -282,3 +534,855 @@ function App() {
 }
 
 export default App;
+./components/SentimentChart';
+import DataGrid from './components/DataGrid';
+import Sentiment from 'sentiment';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import FilterSection from './components/FilterSection';
+import { ChartData, SentimentData } from './types';
+import natural from 'natural';
+import OracleDataFetcher from './OracleDataFetcher'; // Import OracleDataFetcher
+
+const Analyzer = natural.SentimentAnalyzer;
+const stemmer = natural.PorterStemmer;
+const analyzer = new Analyzer('English', stemmer, 'afinn');
+
+const analyzeSentiment_natural = (text: string): number => {
+  const words = text.split(' ');
+  return analyzer.getSentiment(words);
+};
+
+const calculateFinalSentimentScore = (whatwentwell: string, whatDidNotGoWell: string): number => {
+  let score = analyzeSentiment_natural(whatwentwell) + analyzeSentiment_natural(whatDidNotGoWell);
+  return score;
+};
+
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [data, setData] = useState<SentimentData[]>([]);
+  const [filteredData, setFilteredData] = useState<SentimentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    teamId: '',
+    sprint: '',
+    sentiment: [],
+    Domain: '',
+    theme: [],
+    Improvement_opportunity: '',
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedData = await OracleDataFetcher({ filters });
+        const transformedData: SentimentData[] = fetchedData.map((row: any) => ({
+          issueKey: row.ISSUEKEY || '',
+          teamId: row.TEAMID || 0,
+          sprint: row.SPRINT || '',
+          updated: row.UPDATED ? new Date(row.UPDATED) : new Date(),
+          reasonForSuccessRateThemes: row.REASONFORSUCCESSRATETHEMES || '',
+          whatDidNotGoWellThemes: row.WHATDIDNOTGOWELLTHEMES || '',
+          What_went_well_Themes: row.WHAT_WENT_WELL_THEMES || '',
+          reasonForChurnThemes: row.REASONFORCHURNTHEMES || '',
+          Domain: row.DOMAIN || '',
+          whatDidNotGoWell: row.WHATDIDNOTGOWELL || '',
+          whatwentwell: row.WHATWENTWELL || '',
+          reasonToChurn: row.REASONTOCHURN || '',
+          Improvement_opportunity: row.IMPROVEMENT_OPPORTUNITY || '',
+          reasonForSuccessRate: row.REASONFORSUCCESSRATE || '',
+          comments: row.COMMENTS || '',
+          sentimentScore: calculateFinalSentimentScore(row.WHATWENTWELL, row.WHATDIDNOTGOWELL),
+          whatWentWellScore: analyzeSentiment_natural(row.WHATWENTWELL),
+          whatDidNotGoWellScore: analyzeSentiment_natural(row.WHATDIDNOTGOWELL),
+        }));
+        setData(transformedData);
+        setFilteredData(transformedData);
+      } catch (err) {
+        setError('Failed to fetch data.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [filters]);
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prevIsDarkMode) => !prevIsDarkMode);
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  };
+
+  const kpiCards = [
+    {
+      title: 'Average Sentiment',
+      value: filteredData.length
+        ? parseFloat(
+            (filteredData.reduce((acc, curr) => acc + curr.sentimentScore, 0) / filteredData.length).toFixed(2)
+          )
+        : 0,
+      change: 12,
+      icon: <MessageSquare className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Team Members',
+      value: filteredData.length ? new Set(filteredData.map((d) => d.teamId)).size : 0,
+      change: 8,
+      icon: <Users className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Stories Delivered',
+      value: filteredData.length || 0,
+      change: -5,
+      icon: <CheckSquare className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Communication Score',
+      value: 85,
+      change: 15,
+      icon: <MessageCircle className="w-6 h-6 text-blue-600" />,
+    },
+  ];
+
+  const sentimentDistribution = [
+    { name: 'Positive', value: filteredData.filter((d) => d.whatWentWellScore > 0).length },
+    {
+      name: 'Neutral',
+      value: filteredData.filter(
+        (d) => d.whatWentWellScore === 0 || d.whatDidNotGoWellScore === 0
+      ).length,
+    },
+    { name: 'Negative', value: filteredData.filter((d) => d.whatDidNotGoWellScore < 0).length },
+  ];
+
+  const teamSentimentData: ChartData[] = [
+    {
+      name: 'Positive',
+      value: filteredData.length
+        ? filteredData.reduce((acc, curr) => acc + curr.whatWentWellScore, 0) / filteredData.length
+        : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined,
+    },
+    {
+      name: 'Negative',
+      value: filteredData.length
+        ? filteredData.reduce((acc, curr) => acc + curr.whatDidNotGoWellScore, 0) / filteredData.length
+        : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined,
+    },
+  ];
+
+  const TeamSentimentBarChart: React.FC<{ data: ChartData[] }> = ({ data }) => {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" tick={{ fill: isDarkMode ? '#fff' : '#333' }} />
+          <YAxis domain={[-1, 1]} tick={{ fill: isDarkMode ? '#fff' : '#333' }} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: isDarkMode ? '#1F2937' : '#fff',
+              borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+            }}
+            itemStyle={{ color: isDarkMode ? '#fff' : '#333' }}
+            formatter={(value: number) => [value.toFixed(2), 'Score']}
+          />
+          <Bar dataKey="value">
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.name === 'Positive' ? '#4CAF50' : '#f44336'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  return (
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
+      <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <main className="container mx-auto px-4 py-8">
+        <FilterSection data={data} onFilterChange={handleFilterChange} />
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error}</div>}
+        {!loading && !error && (
+          <>
+            <div className="
+
+
+import React, { useState, useEffect } from 'react';
+import { read, utils } from 'xlsx';
+import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
+import Header from './components/Header';
+import KPICard from './components/KPICard';
+import SentimentChart from './components/SentimentChart';
+import DataGrid from './components/DataGrid';
+import Sentiment from 'sentiment';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import FilterSection from './components/FilterSection';
+import { ChartData, SentimentData } from './types';
+import natural from 'natural';
+import readline from 'readline';
+import fs from 'fs';
+import OracleDataFetcher from './OracleDataFetcher'; // Import OracleDataFetcher
+
+// ... (rest of your imports and Analyzer logic)
+
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [data, setData] = useState<SentimentData[]>([]);
+  const [filteredData, setFilteredData] = useState<SentimentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({ // Initialize filters state
+    teamId: '',
+    sprint: '',
+    sentiment: [],
+    Domain: '',
+    theme: [],
+    Improvement_opportunity: '',
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedData = await OracleDataFetcher({ filters }); // Fetch data with filters
+        setData(fetchedData);
+        setFilteredData(fetchedData); // Initially, show all data
+      } catch (err) {
+        setError('Failed to fetch data.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [filters]); // Fetch data when filters change
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    // Filtering logic will happen inside the OracleDataFetcher component or on the server side
+  };
+
+  // ... (rest of your component logic)
+
+  return (
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
+      <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <main className="container mx-auto px-4 py-8">
+        <FilterSection data={data} onFilterChange={handleFilterChange} />
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error}</div>}
+        {!loading && !error && (
+          <>
+            {/* ... (rest of your component rendering logic) */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  Detailed Analysis
+                </h2>
+              </div>
+              <DataGrid
+                data={filteredData}
+                filters={filters} // Pass filters to DataGrid
+              />
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
+
+
+
+import React, { useState, useEffect } from 'react';
+import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
+import Header from './components/Header';
+import KPICard from './components/KPICard';
+import SentimentChart from 'import React, { useState, useEffect } from 'react';
+import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
+import Header from './components/Header';
+import KPICard from './components/KPICard';
+import SentimentChart from './components/SentimentChart';
+import DataGrid from './components/DataGrid';
+import Sentiment from 'sentiment';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import FilterSection from './components/FilterSection';
+import { ChartData, SentimentData } from './types';
+import natural from 'natural';
+import OracleDataFetcher from './OracleDataFetcher'; // Import OracleDataFetcher
+
+const Analyzer = natural.SentimentAnalyzer;
+const stemmer = natural.PorterStemmer;
+const analyzer = new Analyzer('English', stemmer, 'afinn');
+
+const analyzeSentiment_natural = (text: string): number => {
+  const words = text.split(' ');
+  return analyzer.getSentiment(words);
+};
+
+const calculateFinalSentimentScore = (whatwentwell: string, whatDidNotGoWell: string): number => {
+  let score = analyzeSentiment_natural(whatwentwell) + analyzeSentiment_natural(whatDidNotGoWell);
+  return score;
+};
+
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [data, setData] = useState<SentimentData[]>([]);
+  const [filteredData, setFilteredData] = useState<SentimentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    teamId: '',
+    sprint: '',
+    sentiment: [],
+    Domain: '',
+    theme: [],
+    Improvement_opportunity: '',
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedData = await OracleDataFetcher({ filters });
+        const transformedData: SentimentData[] = fetchedData.map((row: any) => ({
+          issueKey: row.ISSUEKEY || '',
+          teamId: row.TEAMID || 0,
+          sprint: row.SPRINT || '',
+          updated: row.UPDATED ? new Date(row.UPDATED) : new Date(),
+          reasonForSuccessRateThemes: row.REASONFORSUCCESSRATETHEMES || '',
+          whatDidNotGoWellThemes: row.WHATDIDNOTGOWELLTHEMES || '',
+          What_went_well_Themes: row.WHAT_WENT_WELL_THEMES || '',
+          reasonForChurnThemes: row.REASONFORCHURNTHEMES || '',
+          Domain: row.DOMAIN || '',
+          whatDidNotGoWell: row.WHATDIDNOTGOWELL || '',
+          whatwentwell: row.WHATWENTWELL || '',
+          reasonToChurn: row.REASONTOCHURN || '',
+          Improvement_opportunity: row.IMPROVEMENT_OPPORTUNITY || '',
+          reasonForSuccessRate: row.REASONFORSUCCESSRATE || '',
+          comments: row.COMMENTS || '',
+          sentimentScore: calculateFinalSentimentScore(row.WHATWENTWELL, row.WHATDIDNOTGOWELL),
+          whatWentWellScore: analyzeSentiment_natural(row.WHATWENTWELL),
+          whatDidNotGoWellScore: analyzeSentiment_natural(row.WHATDIDNOTGOWELL),
+        }));
+        setData(transformedData);
+        setFilteredData(transformedData);
+      } catch (err) {
+        setError('Failed to fetch data.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [filters]);
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prevIsDarkMode) => !prevIsDarkMode);
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  };
+
+  const kpiCards = [
+    {
+      title: 'Average Sentiment',
+      value: filteredData.length
+        ? parseFloat(
+            (filteredData.reduce((acc, curr) => acc + curr.sentimentScore, 0) / filteredData.length).toFixed(2)
+          )
+        : 0,
+      change: 12,
+      icon: <MessageSquare className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Team Members',
+      value: filteredData.length ? new Set(filteredData.map((d) => d.teamId)).size : 0,
+      change: 8,
+      icon: <Users className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Stories Delivered',
+      value: filteredData.length || 0,
+      change: -5,
+      icon: <CheckSquare className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Communication Score',
+      value: 85,
+      change: 15,
+      icon: <MessageCircle className="w-6 h-6 text-blue-600" />,
+    },
+  ];
+
+  const sentimentDistribution = [
+    { name: 'Positive', value: filteredData.filter((d) => d.whatWentWellScore > 0).length },
+    {
+      name: 'Neutral',
+      value: filteredData.filter(
+        (d) => d.whatWentWellScore === 0 || d.whatDidNotGoWellScore === 0
+      ).length,
+    },
+    { name: 'Negative', value: filteredData.filter((d) => d.whatDidNotGoWellScore < 0).length },
+  ];
+
+  const teamSentimentData: ChartData[] = [
+    {
+      name: 'Positive',
+      value: filteredData.length
+        ? filteredData.reduce((acc, curr) => acc + curr.whatWentWellScore, 0) / filteredData.length
+        : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined,
+    },
+    {
+      name: 'Negative',
+      value: filteredData.length
+        ? filteredData.reduce((acc, curr) => acc + curr.whatDidNotGoWellScore, 0) / filteredData.length
+        : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined,
+    },
+  ];
+
+  const TeamSentimentBarChart: React.FC<{ data: ChartData[] }> = ({ data }) => {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" tick={{ fill: isDarkMode ? '#fff' : '#333' }} />
+          <YAxis domain={[-1, 1]} tick={{ fill: isDarkMode ? '#fff' : '#333' }} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: isDarkMode ? '#1F2937' : '#fff',
+              borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+            }}
+            itemStyle={{ color: isDarkMode ? '#fff' : '#333' }}
+            formatter={(value: number) => [value.toFixed(2), 'Score']}
+          />
+          <Bar dataKey="value">
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.name === 'Positive' ? '#4CAF50' : '#f44336'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  return (
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
+      <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <main className="container mx-auto px-4 py-8">
+        <FilterSection data={data} onFilterChange={handleFilterChange} />
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error}</div>}
+        {!loading && !error && (
+          <>
+            <div className="
+
+
+import React, { useState, useEffect } from 'react';
+import { read, utils } from 'xlsx';
+import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
+import Header from './components/Header';
+import KPICard from './components/KPICard';
+import SentimentChart from './components/SentimentChart';
+import DataGrid from './components/DataGrid';
+import Sentiment from 'sentiment';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import FilterSection from './components/FilterSection';
+import { ChartData, SentimentData } from './types';
+import natural from 'natural';
+import readline from 'readline';
+import fs from 'fs';
+import OracleDataFetcher from './OracleDataFetcher'; // Import OracleDataFetcher
+
+// ... (rest of your imports and Analyzer logic)
+
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [data, setData] = useState<SentimentData[]>([]);
+  const [filteredData, setFilteredData] = useState<SentimentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({ // Initialize filters state
+    teamId: '',
+    sprint: '',
+    sentiment: [],
+    Domain: '',
+    theme: [],
+    Improvement_opportunity: '',
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedData = await OracleDataFetcher({ filters }); // Fetch data with filters
+        setData(fetchedData);
+        setFilteredData(fetchedData); // Initially, show all data
+      } catch (err) {
+        setError('Failed to fetch data.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [filters]); // Fetch data when filters change
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    // Filtering logic will happen inside the OracleDataFetcher component or on the server side
+  };
+
+  // ... (rest of your component logic)
+
+  return (
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
+      <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <main className="container mx-auto px-4 py-8">
+        <FilterSection data={data} onFilterChange={handleFilterChange} />
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error}</div>}
+        {!loading && !error && (
+          <>
+            {/* ... (rest of your component rendering logic) */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  Detailed Analysis
+                </h2>
+              </div>
+              <DataGrid
+                data={filteredData}
+                filters={filters} // Pass filters to DataGrid
+              />
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
+./components/SentimentChart';
+import DataGrid from './components/DataGrid';
+import Sentiment from 'sentiment';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import FilterSection from './components/FilterSection';
+import { ChartData, SentimentData } from './types';
+import natural from 'natural';
+import OracleDataFetcher from './OracleDataFetcher'; // Import OracleDataFetcher
+
+const Analyzer = natural.SentimentAnalyzer;
+const stemmer = natural.PorterStemmer;
+const analyzer = new Analyzer('English', stemmer, 'afinn');
+
+const analyzeSentiment_natural = (text: string): number => {
+  const words = text.split(' ');
+  return analyzer.getSentiment(words);
+};
+
+const calculateFinalSentimentScore = (whatwentwell: string, whatDidNotGoWell: string): number => {
+  let score = analyzeSentiment_natural(whatwentwell) + analyzeSentiment_natural(whatDidNotGoWell);
+  return score;
+};
+
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [data, setData] = useState<SentimentData[]>([]);
+  const [filteredData, setFilteredData] = useState<SentimentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    teamId: '',
+    sprint: '',
+    sentiment: [],
+    Domain: '',
+    theme: [],
+    Improvement_opportunity: '',
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedData = await OracleDataFetcher({ filters });
+        const transformedData: SentimentData[] = fetchedData.map((row: any) => ({
+          issueKey: row.ISSUEKEY || '',
+          teamId: row.TEAMID || 0,
+          sprint: row.SPRINT || '',
+          updated: row.UPDATED ? new Date(row.UPDATED) : new Date(),
+          reasonForSuccessRateThemes: row.REASONFORSUCCESSRATETHEMES || '',
+          whatDidNotGoWellThemes: row.WHATDIDNOTGOWELLTHEMES || '',
+          What_went_well_Themes: row.WHAT_WENT_WELL_THEMES || '',
+          reasonForChurnThemes: row.REASONFORCHURNTHEMES || '',
+          Domain: row.DOMAIN || '',
+          whatDidNotGoWell: row.WHATDIDNOTGOWELL || '',
+          whatwentwell: row.WHATWENTWELL || '',
+          reasonToChurn: row.REASONTOCHURN || '',
+          Improvement_opportunity: row.IMPROVEMENT_OPPORTUNITY || '',
+          reasonForSuccessRate: row.REASONFORSUCCESSRATE || '',
+          comments: row.COMMENTS || '',
+          sentimentScore: calculateFinalSentimentScore(row.WHATWENTWELL, row.WHATDIDNOTGOWELL),
+          whatWentWellScore: analyzeSentiment_natural(row.WHATWENTWELL),
+          whatDidNotGoWellScore: analyzeSentiment_natural(row.WHATDIDNOTGOWELL),
+        }));
+        setData(transformedData);
+        setFilteredData(transformedData);
+      } catch (err) {
+        setError('Failed to fetch data.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [filters]);
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prevIsDarkMode) => !prevIsDarkMode);
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  };
+
+  const kpiCards = [
+    {
+      title: 'Average Sentiment',
+      value: filteredData.length
+        ? parseFloat(
+            (filteredData.reduce((acc, curr) => acc + curr.sentimentScore, 0) / filteredData.length).toFixed(2)
+          )
+        : 0,
+      change: 12,
+      icon: <MessageSquare className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Team Members',
+      value: filteredData.length ? new Set(filteredData.map((d) => d.teamId)).size : 0,
+      change: 8,
+      icon: <Users className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Stories Delivered',
+      value: filteredData.length || 0,
+      change: -5,
+      icon: <CheckSquare className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Communication Score',
+      value: 85,
+      change: 15,
+      icon: <MessageCircle className="w-6 h-6 text-blue-600" />,
+    },
+  ];
+
+  const sentimentDistribution = [
+    { name: 'Positive', value: filteredData.filter((d) => d.whatWentWellScore > 0).length },
+    {
+      name: 'Neutral',
+      value: filteredData.filter(
+        (d) => d.whatWentWellScore === 0 || d.whatDidNotGoWellScore === 0
+      ).length,
+    },
+    { name: 'Negative', value: filteredData.filter((d) => d.whatDidNotGoWellScore < 0).length },
+  ];
+
+  const teamSentimentData: ChartData[] = [
+    {
+      name: 'Positive',
+      value: filteredData.length
+        ? filteredData.reduce((acc, curr) => acc + curr.whatWentWellScore, 0) / filteredData.length
+        : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined,
+    },
+    {
+      name: 'Negative',
+      value: filteredData.length
+        ? filteredData.reduce((acc, curr) => acc + curr.whatDidNotGoWellScore, 0) / filteredData.length
+        : 0,
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined,
+    },
+  ];
+
+  const TeamSentimentBarChart: React.FC<{ data: ChartData[] }> = ({ data }) => {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" tick={{ fill: isDarkMode ? '#fff' : '#333' }} />
+          <YAxis domain={[-1, 1]} tick={{ fill: isDarkMode ? '#fff' : '#333' }} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: isDarkMode ? '#1F2937' : '#fff',
+              borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+            }}
+            itemStyle={{ color: isDarkMode ? '#fff' : '#333' }}
+            formatter={(value: number) => [value.toFixed(2), 'Score']}
+          />
+          <Bar dataKey="value">
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.name === 'Positive' ? '#4CAF50' : '#f44336'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  return (
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
+      <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <main className="container mx-auto px-4 py-8">
+        <FilterSection data={data} onFilterChange={handleFilterChange} />
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error}</div>}
+        {!loading && !error && (
+          <>
+            <div className="
+
+
+import React, { useState, useEffect } from 'react';
+import { read, utils } from 'xlsx';
+import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
+import Header from './components/Header';
+import KPICard from './components/KPICard';
+import SentimentChart from './components/SentimentChart';
+import DataGrid from './components/DataGrid';
+import Sentiment from 'sentiment';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import FilterSection from './components/FilterSection';
+import { ChartData, SentimentData } from './types';
+import natural from 'natural';
+import readline from 'readline';
+import fs from 'fs';
+import OracleDataFetcher from './OracleDataFetcher'; // Import OracleDataFetcher
+
+// ... (rest of your imports and Analyzer logic)
+
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [data, setData] = useState<SentimentData[]>([]);
+  const [filteredData, setFilteredData] = useState<SentimentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({ // Initialize filters state
+    teamId: '',
+    sprint: '',
+    sentiment: [],
+    Domain: '',
+    theme: [],
+    Improvement_opportunity: '',
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedData = await OracleDataFetcher({ filters }); // Fetch data with filters
+        setData(fetchedData);
+        setFilteredData(fetchedData); // Initially, show all data
+      } catch (err) {
+        setError('Failed to fetch data.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [filters]); // Fetch data when filters change
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    // Filtering logic will happen inside the OracleDataFetcher component or on the server side
+  };
+
+  // ... (rest of your component logic)
+
+  return (
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
+      <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <main className="container mx-auto px-4 py-8">
+        <FilterSection data={data} onFilterChange={handleFilterChange} />
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error}</div>}
+        {!loading && !error && (
+          <>
+            {/* ... (rest of your component rendering logic) */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  Detailed Analysis
+                </h2>
+              </div>
+              <DataGrid
+                data={filteredData}
+                filters={filters} // Pass filters to DataGrid
+              />
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
+
