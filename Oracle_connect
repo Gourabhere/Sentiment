@@ -1,0 +1,88 @@
+import React, { useState, useEffect } from 'react';
+import { read, utils } from 'xlsx';
+import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
+import Header from './components/Header';
+import KPICard from './components/KPICard';
+import SentimentChart from './components/SentimentChart';
+import DataGrid from './components/DataGrid';
+import Sentiment from 'sentiment';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import FilterSection from './components/FilterSection';
+import { ChartData, SentimentData } from './types';
+import natural from 'natural';
+import readline from 'readline';
+import fs from 'fs';
+import OracleDataFetcher from './OracleDataFetcher'; // Import OracleDataFetcher
+
+// ... (rest of your imports and Analyzer logic)
+
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [data, setData] = useState<SentimentData[]>([]);
+  const [filteredData, setFilteredData] = useState<SentimentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({ // Initialize filters state
+    teamId: '',
+    sprint: '',
+    sentiment: [],
+    Domain: '',
+    theme: [],
+    Improvement_opportunity: '',
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedData = await OracleDataFetcher({ filters }); // Fetch data with filters
+        setData(fetchedData);
+        setFilteredData(fetchedData); // Initially, show all data
+      } catch (err) {
+        setError('Failed to fetch data.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [filters]); // Fetch data when filters change
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    // Filtering logic will happen inside the OracleDataFetcher component or on the server side
+  };
+
+  // ... (rest of your component logic)
+
+  return (
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isDarkMode ? 'dark' : ''}`}>
+      <Header isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <main className="container mx-auto px-4 py-8">
+        <FilterSection data={data} onFilterChange={handleFilterChange} />
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error}</div>}
+        {!loading && !error && (
+          <>
+            {/* ... (rest of your component rendering logic) */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  Detailed Analysis
+                </h2>
+              </div>
+              <DataGrid
+                data={filteredData}
+                filters={filters} // Pass filters to DataGrid
+              />
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
