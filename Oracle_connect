@@ -1,3 +1,121 @@
+import React, { useState } from 'react';
+import { UIShell, GlobalFooter } from '@citi-icg-172888/icgds-patterns-react';
+import { Menu, Button, Icon, El } from '@citi-icg-172888/icgds-react';
+import citilogoFooter from '@citi-icg-172888/icgds-icons/logos/Citi_Logo.svg';
+import citilogo from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo.svg';
+import citilogoAlt from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo_Alternative.svg';
+import './App.css';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by error boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div>Something went wrong. Please try again later.</div>;
+    }
+    return this.props.children;
+  }
+}
+
+export default function LeftMenu() {
+  const states = ['Analytics Hub', 'Automation Hub'];
+  const [selectedMenu, setSelectedMenu] = useState('crreport');
+  const [theme, setTheme] = useState('light');
+
+  const handleMenuClick = (menu) => {
+    setSelectedMenu(menu);
+  };
+
+  const renderContent = () => {
+    switch (selectedMenu) {
+      case 'crreport':
+        return <div>CR - Overnight Report Content</div>;
+      case 'Sentiment':
+        return <div>Sentiment Analysis Content</div>;
+      default:
+        return null;
+    }
+  };
+
+  const links = [
+    { label: 'Terms and Conditions', url: 'https://secure.citi.com/brandcentral/site/assets/downloads/footer/citi_brand_central_terms_and_conditions.pdf' },
+    { label: 'Privacy', url: 'https://secure.citi.com/brandcentral/site/assets/downloads/footer/citi_brand_central_privacy_policy.pdf' },
+    { label: 'Contact Us', url: 'https://secure.citi.com/brandcentral/site/contact' },
+    { label: 'Our Mission and Value Proposition', url: 'https://www.citigroup.com/citi/about/mission-and-value-proposition.html' },
+    { label: 'Camp Reporting', url: 'https://insights.citigroup.net/#/site/GCT/workbooks/19546/views' },
+  ];
+
+  return (
+    <div className={`icgds ${theme}-theme`}>
+      <ErrorBoundary>
+        <UIShell
+          showMenu={true}
+          logoSrc={[citilogo, citilogoAlt]}
+          logoHeight={28}
+          appTitle="DevTools Data Solutions"
+          showSearch={true}
+          searchOptions={states}
+          navClasses="lmn-sticky-top"
+          showThemeSwitch={true}
+          themes={theme}
+          onThemeChange={(currTheme) => setTheme(currTheme)}
+          showAppSwitch={false}
+          showSideMenu={true}
+          sideMenuDefaultVisible={true}
+          sideMenuClass="lmn-layer-primary lmn-border-right lmn-border-weak"
+          sideMenuStyle={{ minWidth: '270px' }}
+          sideMenuHeader={<El className="lmn-heading-secondary lmn-font-size-24 lmn-mx-16px lmn-my-8px">Home</El>}
+          sideMenuFooter={<Button color="ghost" className="lmn-mr-8px"><Icon type="setting" />Settings</Button>}
+          sideMenuContentRender={
+            <Menu
+              defaultSelectedKeys={['crreport']}
+              defaultOpenKeys={['sub1']}
+              mode="inline"
+              onClick={({ key }) => handleMenuClick(key)}
+            >
+              <Menu.SubMenu key="sub1" title={<span><Icon className="lmn-menu-icon" type="pivot" />Analytics Hub</span>}>
+                <Menu.Item key="crreport">CR - Overnight Report</Menu.Item>
+                <Menu.Item key="Sentiment">Sentiment Analysis</Menu.Item>
+                <Menu.Item key="searchcr">Search CR</Menu.Item>
+                <Menu.Item key="3">Sprint Fitness</Menu.Item>
+                <Menu.Item key="4">Backlog Health</Menu.Item>
+                <Menu.Item key="5">Story Quality</Menu.Item>
+                <Menu.Item key="sed">Sprint Execution Dashboard</Menu.Item>
+              </Menu.SubMenu>
+              <Menu.SubMenu key="sub2" title={<span><Icon className="lmn-menu-icon" type="pivot" />Automation Hub</span>}>
+                <Menu.Item key="campsyncjira">CAMP Sync with Jira</Menu.Item>
+                <Menu.Item key="2"><a href="https://insights.citigroup.net/#/site/GCT/workbooks/19546/views" target="_blank" rel="noopener noreferrer">Camp Reporting</a></Menu.Item>
+                <Menu.Item key="3"><a href="https://amp.citigroup.net/ui/appgctjira" target="_blank" rel="noopener noreferrer">Bulk Upload</a></Menu.Item>
+                <Menu.Item key="4"><a href="http://ibistool.nam.nsroot.net:8888/ProtoReq/BOW/BOW_index.jsp" target="_blank" rel="noopener noreferrer">Estimation</a></Menu.Item>
+                <Menu.Item key="5"><a href="https://gtlecsprod-pbumt-tools-api-service.apps.nangcbgtd3@p.ecs.dyn.nsroot.net/swagger/ui/index.html#/" target="_blank" rel="noopener noreferrer">API Access</a></Menu.Item>
+              </Menu.SubMenu>
+              <Menu.Divider />
+            </Menu>
+          }
+          footerRender={
+            <>
+              {renderContent()}
+              <GlobalFooter logo={citilogoFooter} links={links} />
+            </>
+          }
+        />
+      </ErrorBoundary>
+    </div>
+  );
+}
+
+
 
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Users, CheckSquare, MessageCircle } from 'lucide-react';
