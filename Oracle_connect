@@ -1,3 +1,81 @@
+.app {
+  display: flex;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #f5f5f5;
+  padding: 20px;
+  border-right: 1px solid #ddd;
+}
+
+.sidebar h2 {
+  font-size: 18px;
+  margin: 0 0 10px;
+}
+
+.sidebar p {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin-bottom: 10px;
+}
+
+.sidebar button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  padding: 5px;
+  font-size: 14px;
+}
+
+.sidebar ul ul {
+  padding-left: 20px;
+}
+
+.sidebar ul ul li {
+  font-size: 12px;
+  margin: 5px 0;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  background-color: #fff;
+}
+
+.main-content h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.main-content h2 {
+  font-size: 20px;
+  margin-top: 30px;
+  margin-bottom: 10px;
+}
+
+.main-content p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+
+
 import React, { useState } from 'react';
 import './App.css';
 
