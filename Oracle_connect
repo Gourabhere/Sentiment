@@ -1,4 +1,106 @@
 import React, { useState } from 'react';
+import './App.css';
+
+const Sidebar = () => {
+  const [expandedSection, setExpandedSection] = useState(null);
+
+  const toggleSection = (section) => {
+    setExpandedSection(expandedSection === section ? null : section);
+  };
+
+  return (
+    <div className="sidebar">
+      <h2>Citi ICG DS React</h2>
+      <p>6.0.3</p>
+      <ul>
+        <li>
+          <button onClick={() => toggleSection('gettingStarted')}>
+            Getting Started {expandedSection === 'gettingStarted' ? '▼' : '▶'}
+          </button>
+          {expandedSection === 'gettingStarted' && (
+            <ul>
+              <li>Installing React</li>
+              <li>Installing CSS</li>
+            </ul>
+          )}
+        </li>
+        <li>
+          <button onClick={() => toggleSection('migration')}>
+            Migration {expandedSection === 'migration' ? '▼' : '▶'}
+          </button>
+          {expandedSection === 'migration' && (
+            <ul>
+              <li>Roadmap</li>
+              <li>Plan</li>
+              <li>Layout</li>
+              <li>Content</li>
+              <li>Utilities</li>
+            </ul>
+          )}
+        </li>
+        <li>
+          <button onClick={() => toggleSection('components')}>
+            Components {expandedSection === 'components' ? '▼' : '▶'}
+          </button>
+          {expandedSection === 'components' && (
+            <ul>
+              <li>Alert</li>
+              <li>Avatar</li>
+            </ul>
+          )}
+        </li>
+      </ul>
+    </div>
+  );
+};
+
+const MainContent = () => {
+  return (
+    <div className="main-content">
+      <h1>Color Palette New VIS</h1>
+      <p>
+        Our color palette ensures consistency across all applications, and is supportive of two themes through the use of fluid variables that change value as the theme
+        changes. A detailed description of these variables, and their mappings are shown below. The palette was also designed with accessibility in mind, meaning that
+        applications built with any of our themes passes ADA guidelines.
+      </p>
+      <h2>Introduction</h2>
+      <p>
+        Our color palette is aligned to ICG DS Standards to ensure consistency across all applications, and is supportive of the dark and light themes through the
+        use of fluid tokens and CSS variables that change value as the theme changes. A detailed description of these variables and tokens, and their mappings
+        is shown below. The palette was also designed with accessibility in mind, meaning that applications built with any of our themes passes ADA guidelines.
+      </p>
+      <p>
+        CSS Variables - These are available in the root (Fixed) and in the body at the theme level (fluid fluid) and should be used when writing custom theme based
+        CSS.
+      </p>
+      <p>
+        Primitive Tokens - They are available in the fixed-variables.scss file in the icgds-design-tokens package, and contain the full color palette and
+        grayscale, font size, spacing, transitions, borders, etc. These tokens don’t change from theme to theme or any application aligned with ICG DS.
+        Whenever possible, semantic tokens are mapped to fixed tokens.
+      </p>
+      <p>
+        Semantic Tokens - Semantic refers to a way of naming colors based on how they’re used, such as primary or fill. We use semantic color tokens to assign
+        specific roles to colors within the UI, removing the guesswork on what color to use.
+        Semantic color tokens map to primitive tokens and use additional properties and modifiers related to the element, prominence, state and context. The
+        additional layer helps with consistency across designs and easier system-wide updates.
+      </p>
+    </div>
+  );
+};
+
+const App = () => {
+  return (
+    <div className="app">
+      <Sidebar />
+      <MainContent />
+    </div>
+  );
+};
+
+export default App;
+
+
+import React, { useState } from 'react';
 import { UIShell, GlobalFooter } from '@citi-icg-172888/icgds-patterns-react';
 import { Menu, Button, Icon, El } from '@citi-icg-172888/icgds-react';
 import citilogoFooter from '@citi-icg-172888/icgds-icons/logos/Citi_Logo.svg';
