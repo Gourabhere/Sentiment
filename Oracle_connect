@@ -1,17 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import cx from 'classnames';
 import { UIShell, GlobalFooter, AvatarMenu } from '@citi-icg-172888/icgds-patterns-react';
-import { Menu, Switch, Button, themes } from '@citi-icg-172888/icgds-react';
+import { Menu, Switch, Button, El, Card, themes } from '@citi-icg-172888/icgds-react';
 import '@citi-icg-172888/icgds/dist/css/icgds.css';
 import citilogofooter from '@citi-icg-172888/icgds-icons/logos/Citi_Logo.svg';
 import citilogo from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo.svg';
 import citilogoAlt from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo_Alternative.svg';
 
 export default function MergedComponent() {
+  // State management
   const states = ['Alabama', 'Alaska', /*...*/ 'Wyoming'];
   const [theme, setTheme] = useState(themes.LIGHT);
   const [profile, setProfile] = useState('');
   const [loginTime, setLogInTime] = useState(new Date().toLocaleTimeString());
+  const [isFluidContainer, setIsFluidContainer] = useState(false);
+  const [isOneCol, setIsOneCol] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(0);
+  const [cardHeaderWidth, setCardHeaderWidth] = useState(0);
+  const [gridCardWidth, setGridCardWidth] = useState(0);
 
+  // Refs
+  const cardHeaderRef = useRef();
+  const gridCardRef = useRef();
+  const firstRenderRef = useRef(true);
+
+  // Constants
+  const gridBreakpoints = [{ key: 'xs', value: 0 }, { key: 'sm', value: 584 }, { key: 'md', value: 784 }, { key: 'lg', value: 1072 }, { key: 'xl', value: 1264 }, { key: '2xl', value: 1680 }];
+  const gridBreakpointKeys = gridBreakpoints.map((v) => v.key);
+  const gridBreakpointValues = gridBreakpoints.map((v) => v.value);
   const links = [
     { label: 'Terms and Conditions', url: 'https://secure.citi.com/brandcentral/site/assets/downloads/footer/citi_brand_central_terms_and_conditions.pdf' },
     { label: 'Privacy', url: 'https://secure.citi.com/brandcentral/site/assets/downloads/footer/citi_brand_central_privacy_policy.pdf' },
@@ -19,6 +35,18 @@ export default function MergedComponent() {
     { label: 'Our Mission and Value Proposition', url: 'https://www.citigroup.com/citi/about/mission-and-value-proposition.html' },
   ];
 
+  // Derived values
+  let breakpointText = 'XS';
+  let rangeText = '';
+  const upperIndex = gridBreakpointValues.findIndex((v, index, arr) => index > 0 && v > arr[index - 1]);
+  const lowerIndex = upperIndex === -1 ? gridBreakpointValues.length - 1 : upperIndex - 1;
+  rangeText = upperIndex === -1 
+    ? `${gridBreakpointValues[lowerIndex]}px` 
+    : `${gridBreakpointValues[lowerIndex]}px - ${gridBreakpointValues[upperIndex]}px`;
+  breakpointText = gridBreakpointKeys[lowerIndex].toUpperCase();
+  const widthText = isFluidContainer && windowWidth > gridBreakpointValues[1] ? cardHeaderWidth : 'Unset';
+
+  // Handlers
   const handleClick = (e) => {
     if (e.keyPath.includes('theme')) {
       setTheme(e.key === 'light' ? themes.LIGHT : themes.DARK);
@@ -27,16 +55,40 @@ export default function MergedComponent() {
     }
   };
 
-  const login = () => {
-    setLogInTime(new Date().toLocaleTimeString());
-  };
-
+  const login = () => setLogInTime(new Date().toLocaleTimeString());
+  const onLogout = () => setLogInTime(undefined);
   const loginButton = <Button onClick={login}>Log In</Button>;
 
-  const onLogout = () => {
-    setLogInTime(undefined);
+  const updateWidth = () => {
+    setWindowWidth(window.innerWidth);
+    if (cardHeaderRef.current) setCardHeaderWidth(cardHeaderRef.current.offsetWidth);
+    if (gridCardRef.current) setGridCardWidth(gridCardRef.current.offsetWidth);
   };
 
+  const changeFluid = (isChecked) => {
+    setIsFluidContainer(isChecked);
+    setTimeout(updateWidth, 100);
+  };
+
+  const changeIsOne = (isChecked) => {
+    setIsOneCol(isChecked);
+    setTimeout(updateWidth, 100);
+  };
+
+  // Effects
+  useEffect(() => {
+    if (firstRenderRef.current) {
+      firstRenderRef.current = false;
+      updateWidth();
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  // Menu configuration
   const innerMenu = (
     <Menu mode="vertical" selectable={false} onClick={handleClick}>
       <Menu.SubMenu key="theme" title="Theme">
@@ -67,9 +119,15 @@ export default function MergedComponent() {
     </Menu>
   );
 
+  // Class calculations
+  const removePadding = isOneCol ? 'lmn-px-0' : '';
+  const colCls = isOneCol ? 'lmn-col-1 lmn-mt-24px' : 'lmn-col-3 lmn-col-md-2 lmn-col-lg-1 lmn-mt-24px';
+  const gridCardCls = cx('lmn-card lmn-ui-sm', { 'lmn-p-4px': !removePadding });
+
   return (
     <div className={`icgds ${theme} theme`}>
       <UIShell
+        fluidContainer={isFluidContainer}
         showMenu={false}
         logoSrc={[citilogo, citilogoAlt]}
         logoHeight={28}
@@ -81,7 +139,7 @@ export default function MergedComponent() {
         showAppSwitch={false}
         sideBarExpanded={false}
         theme={theme}
-        onThemeChange={(currTheme) => setTheme(currTheme)}
+        onThemeChange={setTheme}
         showSidebar
         sidebarItems={[
           { key: 'menu1', icon: 'home', title: 'Home', tooltip: 'Home', content: 'Home' },
@@ -101,7 +159,47 @@ export default function MergedComponent() {
             onLogout={onLogout}
           />
         }
-      />
+      >
+        <El className="lmn-p-12px lmn-px-sm-0 icgds-responsive-demo">
+          <Card ref={cardHeaderRef} className="lmn-col-12 lmn-mt-24px">
+            <Card.Header>
+              <p className="lmn-text-strong lmn-mb-0">{isFluidContainer ? 'lmn-container-fluid' : 'lmn-container'}</p>
+            </Card.Header>
+            <Card.Body>
+              <div className="lmn-row">
+                <div className="lmn-col">
+                  <El className="lmn-form-group">
+                    <El tag="span" className="lmn-form-label">Fluid Container</El>
+                    <Switch checked={isFluidContainer} onChange={(e) => changeFluid(e.target.checked)} />
+                  </El>
+                </div>
+                <div className="lmn-col">
+                  <El className="lmn-form-group">
+                    <El tag="span" className="lmn-form-label">All 1 Column</El>
+                    <Switch checked={isOneCol} onChange={(e) => changeIsOne(e.target.checked)} />
+                  </El>
+                </div>
+              </div>
+              <div className="lmn-mt-16px">
+                Max Container Width: {widthText}<br />
+                Screen size: {windowWidth}px<br />
+                Breakpoint: {breakpointText} <span className="lmn-text-sm">({rangeText})</span>
+              </div>
+            </Card.Body>
+          </Card>
+          
+          <El className="lmn-row">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <El key={`card_column_${i}`} className={colCls}>
+                <Card ref={gridCardRef} className={gridCardCls}>
+                  <Card.Header>{i + 1}</Card.Header>
+                  <Card.Body>{gridCardWidth}px</Card.Body>
+                </Card>
+              </El>
+            ))}
+          </El>
+        </El>
+      </UIShell>
     </div>
   );
 }
