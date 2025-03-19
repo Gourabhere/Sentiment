@@ -1,124 +1,143 @@
 import React, { useState, useEffect } from 'react';
 import HighchartsReact from 'highcharts-react-official';
 import Highcharts from 'highcharts';
+import { merge } from 'lodash';
 
-function SentimentChart() {
-    const [chartOptions, setChartOptions] = useState({});
+// Add error boundary component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-    useEffect(() => {
-        // Fetch sentiment data from your API endpoint
-        fetch('/api/sentiment')
-            .then(response => response.json())
-            .then(data => {
-                // Process the data to calculate sentiment counts
-                let negativeCount = 0;
-                let neutralCount = 0;
-                let positiveCount = 0;
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
 
-                data.forEach(item => {
-                    if (item.sentimentScore < -1) { // Adjust thresholds as needed
-                        negativeCount++;
-                    } else if (item.sentimentScore > 1) { // Adjust thresholds as needed
-                        positiveCount++;
-                    } else {
-                        neutralCount++;
-                    }
-                });
+  componentDidCatch(error, errorInfo) {
+    console.error('Chart Error:', error, errorInfo);
+  }
 
-                 // Calculate total count
-                const totalCount = negativeCount + neutralCount + positiveCount;
-
-                // Determine overall sentiment based on counts
-                let overallSentiment = 'Neutral';
-                if (positiveCount > negativeCount && positiveCount > neutralCount) {
-                    overallSentiment = 'Overwhelmingly Positive'; // Or adjust as needed
-                } else if (negativeCount > positiveCount && negativeCount > neutralCount) {
-                    overallSentiment = 'Overwhelmingly Negative'; // Or adjust as needed
-                }
-
-                // Prepare data for the line chart
-                const chartData = [
-                    { name: 'Negative', y: negativeCount, color: '#dc3545' },
-                    { name: 'Neutral', y: neutralCount, color: '#ffc107' },
-                    { name: 'Positive', y: positiveCount, color: '#28a745' }
-                ];
-
-                // Set chart options for a line chart
-                setChartOptions({
-                    chart: {
-                        type: 'line',
-                        backgroundColor: '#f8f9fa' // Light background like the image
-                    },
-                    title: {
-                        text: 'COMMUNITY SENTIMENT',
-                        align: 'left'
-                    },
-                     subtitle: {
-                        text: overallSentiment,
-                        align: 'left',
-                        style: {
-                            fontWeight: 'bold',
-                            fontSize: '18px'
-                        }
-                    },
-                    xAxis: {
-                        categories: ['Sentiment'],
-                        title: {
-                            text: null
-                        },
-                        labels: {
-                            enabled: false
-                        }
-                    },
-                    yAxis: {
-                        title: {
-                            text: 'Count'
-                        },
-                        min: 0,
-                    },
-                    series: [{
-                        name: 'Sentiment',
-                        data: chartData.map(item => item.y),
-                        colorByPoint: true,
-                        colors: chartData.map(item => item.color),
-                        dataLabels: {
-                            enabled: true,
-                            format: '{point.y}',
-                            style: {
-                                fontSize: '14px'
-                            }
-                        }
-                    }],
-                    legend: {
-                        enabled: false
-                    },
-                    plotOptions: {
-                        line: {
-                            dataLabels: {
-                                enabled: true
-                            },
-                            enableMouseTracking: false
-                        }
-                    },
-                     credits: {
-                        enabled: false // Remove Highcharts credits
-                    },
-                    tooltip: {
-                        enabled: false // Disable tooltips
-                    }
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching sentiment data', error);
-            });
-    },);
-
-    return (
-        <div>
-            <HighchartsReact highcharts={Highcharts} options={chartOptions} />
-        </div>
-    );
+  render() {
+    if (this.state.hasError) {
+      return <div className="chart-error">Chart rendering failed</div>;
+    }
+    return this.props.children;
+  }
 }
 
-export default SentimentChart;
- 
+export default function SentimentBarChart({ isStyleMode, themeConfig }) {
+  const [chartOptions, setChartOptions] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const modeConfig = {
+    chart: {
+      styledMode: isStyleMode,
+    },
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/sentiment');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Validate response structure
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid data format: Expected array');
+        }
+
+        const requiredFields = ['combineScore', 'positiveScore', 'negativeScore'];
+        if (!data.every(item => requiredFields.every(field => field in item))) {
+          throw new Error('Missing required fields in response');
+        }
+
+        // Process data
+        const counts = data.reduce((acc, item) => ({
+          negative: acc.negative + (item.combineScore < 0 ? 1 : 0),
+          neutral: acc.neutral + (item.combineScore === 0 ? 1 : 0),
+          positive: acc.positive + (item.combineScore > 0 ? 1 : 0)
+        }), { negative: 0, neutral: 0, positive: 0 });
+
+        // Build chart options
+        const options = {
+          chart: {
+            type: 'bar',
+            height: 300,
+            backgroundColor: '#f8f9fa'
+          },
+          title: {
+            text: 'TEAM SENTIMENT ANALYSIS',
+            align: 'left'
+          },
+          xAxis: {
+            categories: ['Negative', 'Neutral', 'Positive'],
+            labels: { style: { fontSize: '12px' } }
+          },
+          yAxis: { visible: false },
+          series: [{
+            name: 'Sentiment Count',
+            data: [counts.negative, counts.neutral, counts.positive],
+            colorByPoint: true,
+            dataLabels: {
+              enabled: true,
+              format: '{y}',
+              style: { fontSize: '12px' }
+            }
+          }],
+          colors: ['#dc3545', '#ffc107', '#28a745'],
+          plotOptions: {
+            bar: {
+              borderRadius: 8,
+              grouping: false
+            }
+          },
+          credits: { enabled: false }
+        };
+
+        setChartOptions(options);
+        setError(null);
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setError(err.message);
+        setChartOptions({
+          title: { text: 'Data Load Error' },
+          series: [{ data: [0, 0, 0] }]
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [isStyleMode]);
+
+  return (
+    <ErrorBoundary>
+      <div className="sentiment-chart">
+        {loading && <div className="chart-loading">Loading sentiment data...</div>}
+        {error && (
+          <div className="chart-error">
+            Error: {error}. Please check:
+            <ul>
+              <li>Network connection</li>
+              <li>API endpoint (/api/sentiment)</li>
+              <li>Data format</li>
+            </ul>
+          </div>
+        )}
+        
+        <HighchartsReact
+          highcharts={Highcharts}
+          options={merge({}, chartOptions, isStyleMode ? themeConfig : {}, modeConfig)}
+        />
+      </div>
+    </ErrorBoundary>
+  );
+}
