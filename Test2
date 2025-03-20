@@ -2,142 +2,195 @@ import React, { useState, useEffect } from 'react';
 import HighchartsReact from 'highcharts-react-official';
 import Highcharts from 'highcharts';
 import { merge } from 'lodash';
-
-// Add error boundary component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('Chart Error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return <div className="chart-error">Chart rendering failed</div>;
-    }
-    return this.props.children;
-  }
-}
+import { Icon } from '@citi-icg-172888/icgds-react';
 
 export default function SentimentBarChart({ isStyleMode, themeConfig }) {
-  const [chartOptions, setChartOptions] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    const [chartOptions, setChartOptions] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [totalResponses, setTotalResponses] = useState(0);
 
-  const modeConfig = {
-    chart: {
-      styledMode: isStyleMode,
-    },
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/sentiment');
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Validate response structure
-        if (!Array.isArray(data)) {
-          throw new Error('Invalid data format: Expected array');
-        }
-
-        const requiredFields = ['combineScore', 'positiveScore', 'negativeScore'];
-        if (!data.every(item => requiredFields.every(field => field in item))) {
-          throw new Error('Missing required fields in response');
-        }
-
-        // Process data
-        const counts = data.reduce((acc, item) => ({
-          negative: acc.negative + (item.combineScore < 0 ? 1 : 0),
-          neutral: acc.neutral + (item.combineScore === 0 ? 1 : 0),
-          positive: acc.positive + (item.combineScore > 0 ? 1 : 0)
-        }), { negative: 0, neutral: 0, positive: 0 });
-
-        // Build chart options
-        const options = {
-          chart: {
-            type: 'bar',
-            height: 300,
-            backgroundColor: '#f8f9fa'
-          },
-          title: {
-            text: 'TEAM SENTIMENT ANALYSIS',
-            align: 'left'
-          },
-          xAxis: {
-            categories: ['Negative', 'Neutral', 'Positive'],
-            labels: { style: { fontSize: '12px' } }
-          },
-          yAxis: { visible: false },
-          series: [{
-            name: 'Sentiment Count',
-            data: [counts.negative, counts.neutral, counts.positive],
-            colorByPoint: true,
-            dataLabels: {
-              enabled: true,
-              format: '{y}',
-              style: { fontSize: '12px' }
-            }
-          }],
-          colors: ['#dc3545', '#ffc107', '#28a745'],
-          plotOptions: {
-            bar: {
-              borderRadius: 8,
-              grouping: false
-            }
-          },
-          credits: { enabled: false }
-        };
-
-        setChartOptions(options);
-        setError(null);
-      } catch (err) {
-        console.error('Fetch error:', err);
-        setError(err.message);
-        setChartOptions({
-          title: { text: 'Data Load Error' },
-          series: [{ data: [0, 0, 0] }]
-        });
-      } finally {
-        setLoading(false);
-      }
+    const modeConfig = {
+        chart: {
+            styledMode: isStyleMode,
+        },
     };
 
-    fetchData();
-  }, [isStyleMode]);
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch('/api/sentiment');
+                if (!response.ok) throw new Error('Failed to fetch data');
+                const data = await response.json();
 
-  return (
-    <ErrorBoundary>
-      <div className="sentiment-chart">
-        {loading && <div className="chart-loading">Loading sentiment data...</div>}
-        {error && (
-          <div className="chart-error">
-            Error: {error}. Please check:
-            <ul>
-              <li>Network connection</li>
-              <li>API endpoint (/api/sentiment)</li>
-              <li>Data format</li>
-            </ul>
-          </div>
-        )}
-        
-        <HighchartsReact
-          highcharts={Highcharts}
-          options={merge({}, chartOptions, isStyleMode ? themeConfig : {}, modeConfig)}
-        />
-      </div>
-    </ErrorBoundary>
-  );
+                // Calculate sentiment distribution
+                const counts = data.reduce((acc, item) => ({
+                    positive: acc.positive + (item.combineScore > 0 ? 1 : 0),
+                    neutral: acc.neutral + (item.combineScore === 0 ? 1 : 0),
+                    negative: acc.negative + (item.combineScore < 0 ? 1 : 0)
+                }), { positive: 0, neutral: 0, negative: 0 });
+
+                const total = data.length;
+                setTotalResponses(total);
+
+                // Calculate percentages
+                const percentages = {
+                    positive: total > 0 ? Math.round((counts.positive / total) * 100) : 0,
+                    neutral: total > 0 ? Math.round((counts.neutral / total) * 100) : 0,
+                    negative: total > 0 ? Math.round((counts.negative / total) * 100) : 0
+                };
+
+                // Determine overall sentiment
+                const maxSentiment = Object.entries(percentages).reduce(
+                    (max, [key, value]) => value > max[1] ? [key, value] : max,
+                    ['neutral', -Infinity]
+                )[0];
+
+                const options = {
+                    chart: {
+                        type: 'bar',
+                        backgroundColor: 'transparent',
+                        height: 320,
+                        inverted: true,
+                        spacing: [20, 20, 30, 20],
+                        style: {
+                            fontFamily: 'Arial, sans-serif'
+                        }
+                    },
+                    title: {
+                        text: 'COMMUNITY SENTIMENT ANALYSIS',
+                        align: 'left',
+                        style: {
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            color: '#2c3e50'
+                        },
+                        margin: 30
+                    },
+                    xAxis: {
+                        visible: false,
+                        min: 0,
+                        max: 100
+                    },
+                    yAxis: {
+                        categories: [
+                            `😠 Negative (${percentages.negative}%)`,
+                            `😐 Neutral (${percentages.neutral}%)`,
+                            `😊 Positive (${percentages.positive}%)`
+                        ],
+                        labels: {
+                            style: {
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                color: '#34495e'
+                            }
+                        },
+                        lineWidth: 0
+                    },
+                    plotOptions: {
+                        bar: {
+                            borderRadius: 15,
+                            colorByPoint: true,
+                            dataLabels: {
+                                enabled: true,
+                                inside: true,
+                                align: 'right',
+                                format: '{point.category}',
+                                style: {
+                                    fontSize: '14px',
+                                    textOutline: 'none',
+                                    fontWeight: 'bold'
+                                }
+                            },
+                            groupPadding: 0.3
+                        }
+                    },
+                    colors: ['#e74c3c', '#f39c12', '#2ecc71'],
+                    series: [{
+                        name: 'Sentiment',
+                        data: [
+                            { y: percentages.negative, color: '#e74c3c' },
+                            { y: percentages.neutral, color: '#f39c12' },
+                            { y: percentages.positive, color: '#2ecc71' }
+                        ]
+                    }],
+                    legend: { enabled: false },
+                    credits: { enabled: false },
+                    tooltip: {
+                        formatter: function() {
+                            return `<b>${this.series.name}</b><br>
+                                    ${this.point.category}: ${this.y}%<br>
+                                    Total responses: ${totalResponses}`;
+                        }
+                    }
+                };
+
+                setChartOptions(options);
+                setError(null);
+            } catch (err) {
+                console.error('Error:', err);
+                setError(err.message);
+                setChartOptions({
+                    title: { text: 'Error Loading Data' },
+                    series: [{}]
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [isStyleMode]);
+
+    return (
+        <div className="sentiment-card" style={{
+            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            position: 'relative'
+        }}>
+            <div className="chart-header" style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px'
+            }}>
+                <h3 style={{ margin: 0, color: '#2c3e50' }}>User Sentiment Overview</h3>
+                <div className="chart-actions">
+                    <Icon name="share" style={{ marginRight: '15px', cursor: 'pointer' }} />
+                    <Icon name="heart" style={{ cursor: 'pointer' }} />
+                </div>
+            </div>
+
+            {loading && <div className="loading-overlay">
+                <div className="spinner"></div>
+                <p>Analyzing sentiment data...</p>
+            </div>}
+
+            {error && <div className="error-message" style={{
+                color: '#e74c3c',
+                padding: '20px',
+                textAlign: 'center'
+            }}>
+                {error}
+            </div>}
+
+            <HighchartsReact
+                highcharts={Highcharts}
+                options={merge({}, chartOptions, isStyleMode ? themeConfig : {}, modeConfig)}
+            />
+
+            <div className="chart-footer" style={{
+                marginTop: '20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                color: '#7f8c8d'
+            }}>
+                <span>Total responses: {totalResponses}</span>
+                <span>Updated: {new Date().toLocaleDateString()}</span>
+            </div>
+        </div>
+    );
 }
