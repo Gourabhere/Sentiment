@@ -1,54 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
 import cx from 'classnames';
-import { UIShell, GlobalFooter, AvatarMenu } from '@citi-icg-172888/1cgds-patterns-react';
+import { UIShell, GlobalFooter, AvatarMenu } from '@citi-icg-172888/icgds-patterns-react';
 import CustomizedContent from './CustomizedContent';
 import { Tab, themes, Menu, Switch, Button, El, Card, Select } from '@citi-icg-172888/icgds-react';
 import LineChart from './DataFetch/LineChart';
-import FetchData from '../DataFetch/FetchData';
+import FetchData from './DataFetch/FetchData';
 import SuccessRate from './DataFetch/SuccessRate';
+import citilogoFooter from '@citi-icg-172888/icgds-icons/logos/Citi_Logo.svg';
+import citilogo from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo.svg';
+import citilogoAlt from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo_Alternative.svg';
+import Item from 'antd/es/list/Item';
 import CapacityUtil from './DataFetch/CapacityUtil';
 import SentimentBarChart from './DataFetch/SentimentAnalysis';
-import citiLogoFooter from '@citi-icq-172888/1cgds-icons/logos/Citi_Logo.svg';
-import citiLogo from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo.svg';
-import citiLogoAlt from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo_Alternative.svg';
-import Item from 'antd/es/list/Item';
 
 export default function LeftNav() {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [profile, setProfile] = useState('');
   const [logInTime, setLogInTime] = useState(new Date().toLocaleTimeString());
   const [teams, setTeams] = useState([]);
-  const [theme, setTheme] = useState(themes.LIGHT);
-  const [isFluidContainer, setIsFluidContainer] = useState(true);
-  const [isOneCol, setIsOneCol] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(0);
-  const [cardHeaderWidth, setCardHeaderWidth] = useState(0);
-  const [gridCardWidth, setGridCardWidth] = useState(0);
-
-  const cardHeaderRef = useRef();
-  const gridCardRef = useRef();
-  const firstRenderRef = useRef(true);
-
-  const gridBreakpoints = [
-    { key: 'xs', value: 8 },
-    { key: 'sm', value: 584 },
-    { key: 'md', value: 784 },
-    { key: 'lg', value: 1872 },
-    { key: 'xl', value: 1264 },
-    { key: '2xl', value: 1688 },
-  ];
-
-  const gridBreakpointKeys = gridBreakpoints.map((v) => v.key);
-  const gridBreakpointValues = gridBreakpoints.map((v) => v.value);
-
-  const links = [
-    { label: 'Terms and Conditions', url: 'https://secure.citi.com/brandcentral/site/assets/downloads/footer/citi_brand_central_privacy_policy.pdf' },
-    { label: 'Contact Us', url: 'https://secure.citi.com/brandcentral/site/contact' },
-    { label: 'Our Mission and Value Proposition', url: 'https://www.citigroup.com/citi/about/mission-and-value-proposition.html' },
-  ];
 
   useEffect(() => {
-    fetch('http://sd-6/1h-4rv0:JeJe/api/teams')
+    fetch('http://sd-671h-4rv0:3030/api/teams')
       .then((response) => response.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -58,17 +30,72 @@ export default function LeftNav() {
         }
       })
       .catch((error) => {
-        console.error('Error fetching teams:', error);
+        console.error('Error fetching teams: ', error);
       });
   }, []);
 
   const { Option } = Select;
-
   const onChange = (value) => {
-    console.log('Selected team:', value);
+    //console.log('Selected team: ', value);
   };
-
   const { SubMenu } = Menu;
+  const states = [];
+  const [theme, setTheme] = useState(themes.LIGHT);
+  const [isFluidContainer, setIsFluidContainer] = useState(true);
+  const [isOneCol, setIsOneCol] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(0);
+  const [cardHeaderWidth, setCardHeaderWidth] = useState(0);
+  const [gridCardWidth, setGridCardWidth] = useState(0);
+  const cardHeaderRef = useRef();
+  const gridCardRef = useRef();
+  const firstRenerRef = useRef(true);
+  const gridBreakpoints = [
+    { key: 'xs', value: 0 },
+    { key: 'sm', value: 584 },
+    { key: 'md', value: 784 },
+    { key: 'lg', value: 1072 },
+    { key: 'xl', value: 1264 },
+    { key: '2xl', value: 1680 },
+  ];
+  const gridBreakpointKeys = gridBreakpoints.map((v) => v.key);
+  const gridBreakpointValues = gridBreakpoints.map((v) => v.value);
+
+  const links = [
+    {
+      label: 'Terms and Conditions',
+      url:
+        'https://secure.citi.com/brandcentral/site/assets/downloads/footer/citi_brand_central_terms_and_conditions.pdf',
+    },
+    {
+      label: 'Privacy',
+      url:
+        'https://secure.citi.com/brandcentral/site/assets/downloads/footer/citi_brand_central_privacy_policy.pdf',
+    },
+    {
+      label: 'Contact Us',
+      url: 'https://secure.citi.com/brandcentral/site/contact',
+    },
+    {
+      label: 'Our Mision and Value Proposition',
+      url: 'https://www.citigroup.com/citi/about/mission-and-value-proposition.html',
+    },
+  ];
+
+  let breakpointText;
+  let rangeText = '';
+  let widthText = 'Unset';
+  let upperIndex = gridBreakpointValues.findIndex(
+    (v, index, arr) => index > 0 && v > windowWidth && windowWidth >= arr[index - 1]
+  );
+  let lowwerIndex = upperIndex - 1;
+  if (upperIndex === -1) {
+    lowwerIndex = gridBreakpointValues.length - 1;
+    rangeText = `> ${gridBreakpointValues[lowwerIndex]}px`;
+  } else {
+    rangeText = `${gridBreakpointValues[lowwerIndex]}px - ${gridBreakpointValues[upperIndex]}px`;
+  }
+  breakpointText = gridBreakpointKeys[lowwerIndex].toUpperCase();
+  widthText = !isFluidContainer && windowWidth > gridBreakpointValues[1] ? cardHeaderWidth : widthText;
 
   const handleClick = (e) => {
     if (e.keyPath.includes('theme')) {
@@ -100,16 +127,16 @@ export default function LeftNav() {
     }
   };
 
-  const colCls = isOneCol ? '1mm-col-2' : 'lmn-col-3 lmn-wt-24px';
-  const cardCls = isOneCol ? 'Im-col-2' : 'Imn-col-11 Imn-st-0px';
-  const sentCls = 'len-col-11 Imn-mt-24px';
+  const colCls = isOneCol ? 'lmn-col-2' : 'lmn-col-3 lmn-mt-24px';
+  const cardCls = isOneCol ? 'lmn-col-2' : 'lmn-col-11 lmn-mt-8px';
+  const sentCls = 'lmn-col-11 lmn-mt-24px';
 
   useEffect(() => {
-    if (firstRenderRef.current === true) {
-      firstRenderRef.current = false;
+    if (firstRenerRef.current === true) {
+      firstRenerRef.current = false;
       updateWidth();
     }
-  }, [firstRenderRef.current]);
+  }, [firstRenerRef.current]);
 
   useEffect(() => {
     window.addEventListener('resize', updateWidth);
@@ -120,33 +147,33 @@ export default function LeftNav() {
 
   const innerMenu = (
     <Menu mode="vertical" selectable={false} onClick={handleClick}>
-      <SubMenu key="theme" title="Theme">
+      <Menu.SubMenu key="theme" title="Theme">
         <Menu.Item className={theme === 'light' ? 'selected' : ''} key="light">
           Light
         </Menu.Item>
         <Menu.Item className={theme === 'dark' ? 'selected' : ''} key="dark">
           Dark
         </Menu.Item>
-      </SubMenu>
-      <SubMenu key="profile" title="Profile">
-        <Menu.Item key="institutional" className={profile === 'institutional' ? 'selected' : ''}>
+      </Menu.SubMenu>
+      <Menu.SubMenu key="profile" title="Profile">
+        <Menu.Item className={profile === 'institutional' ? 'selected' : ''} key="institutional">
           Institutional
         </Menu.Item>
-        <Menu.Item key="corporation" className={profile === 'corporation' ? 'selected' : ''}>
+        <Menu.Item className={profile === 'corporation' ? 'selected' : ''} key="corporation">
           Corporation
         </Menu.Item>
-        <SubMenu key="other" title="Other">
-          <Menu.Item key="other1" className={profile === 'other1' ? 'selected' : ''}>
+        <Menu.SubMenu key="other" title="Other">
+          <Menu.Item className={profile === 'other1' ? 'selected' : ''} key="other1">
             Option Other 1
           </Menu.Item>
-          <Menu.Item key="other2" className={profile === 'other2' ? 'selected' : ''}>
+          <Menu.Item className={profile === 'other2' ? 'selected' : ''} key="other2">
             Option Other 2
           </Menu.Item>
-        </SubMenu>
-      </SubMenu>
-      <Menu.Item key="newSearch" className="len-d-flex">
+        </Menu.SubMenu>
+      </Menu.SubMenu>
+      <Menu.Item key="newSearch" className="lmn-d-flex">
         <span>New Search</span>
-        <Switch wrapperClass="len-ml-auto" />
+        <Switch wrapperClass="lmn-ml-auto" />
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item key="openChart">Open Chart</Menu.Item>
@@ -161,11 +188,11 @@ export default function LeftNav() {
   );
 
   return (
-    <div className={`icgds ${theme}-theme`}>
+    <div className={`icgds-${theme}-theme`}>
       <UIShell
         fluidContainer={true}
         showMenu={false}
-        logoSrc={[citiLogo, citiLogoAlt]}
+        logoSrc={[citilogo, citilogoAlt]}
         logoHeight={28}
         appTitle="Engineering Productivity Portal"
         showSearch={true}
@@ -175,12 +202,12 @@ export default function LeftNav() {
         showAppSwitch={false}
         showAvatar={AvatarMenu}
         sideBarExpanded={false}
-        theme={theme}
-        onThemeChange={(currTheme) => setTheme(currTheme)}
+        theme={[theme]}
+        onThemeChange={(crrtheme) => setTheme(crrtheme)}
         showSideBar={true}
         sideBarItems={[
           {
-            key: 'menu1',
+            key: 'menul',
             icon: 'home',
             title: 'Home',
             tooltip: false,
@@ -195,8 +222,14 @@ export default function LeftNav() {
             tooltip: 'Contexts',
             content: (
               <div>
-                <Menu onClick={handleClick} style={{ width: 150 }} defaultSelectedKeys={['']} defaultOpenKeys={['']} mode="inline">
-                  <SubMenu key="sub1" title={<span>Contexts</span>}>
+                <Menu
+                  onClick={handleClick}
+                  style={{ width: 150 }}
+                  defaultSelectedKeys={['']}
+                  defaultOpenKeys={['']}
+                  mode="inline"
+                >
+                  <SubMenu key="sub1" title={<span >Contexts</span>}>
                     <Menu.Item key="1">Sprint</Menu.Item>
                     <Menu.Item key="2">Release</Menu.Item>
                     <Menu.Item key="3">Project</Menu.Item>
@@ -222,8 +255,8 @@ export default function LeftNav() {
             disabled: false,
           },
         ]}
-        footerRender={<GlobalFooter logo={citiLogoFooter} links={links} />}
-        avatarRender={
+        footerRender={() => <GlobalFooter logo={citilogoFooter} links={links} />}
+        avatarRender={() => (
           <AvatarMenu
             displayType="anonymous"
             soeld="tn12345"
@@ -234,98 +267,159 @@ export default function LeftNav() {
             menu={innerMenu}
             onLogout={onLogout}
           />
-        }
+        )}
       >
         <div>
           <Tab defaultActiveKey="1">
             <Tab.TabPane tab="Work" key="1">
-              <El className="Imn-p-12px len-px-sm-0 icgds-responsive-demo">
-                <Card hover ref={cardHeaderRef} className="lan-shadow-1g 1mn-p-3 Imn-mb-5 lmn-bg-white lan-border lmn-border-strong lmn-col-12 1mn-mt-4px">
-                  <Card body>
+              <El className="lmn-p-12px 1mn-px-sm-0 icgds-responsive-demo">
+                <Card
+                  hover
+                  ref={cardHeaderRef}
+                  className="Imn-shadow-1g 1mn-p-3 1mn-mb-5 lmn-bg-white Imn-border Imn-border-strong lmn-col-12 Imn-mt-4px"
+                >
+                  <Card.Body>
                     <div id="app-content" className="lmn-d-flex Imn-justify-content-center">
-                      <div className="1mn-pr-24p 1mn-row lan-p-8px icgds-responsive-demo len-font-weight-bold">Team Name :</div>
+                      <div className="Imn-pr-24pm Imn-row Imn-p-8px icgds-responsive-demo Imn-font-weight-bold">
+                        Team Name :
+                      </div>
                       {teams.length > 0 && (
-                        <CustomizedContent teams={teams.map((item) => [item[0], item[1]])} onTeamSelect={(teamId) => setSelectedTeam(teamId)} />
+                        <CustomizedContent
+                          teams={teams.map((item) => [item[0], item[1]])}
+                          onTeamSelect={(teamId) => setSelectedTeam(teamId)}
+                        />
                       )}
                     </div>
-                  </Card>
+                  </Card.Body>
                 </Card>
               </El>
-              <El className="1mn-row lmn-p-12px len-px-sm-8">
-                <El key={'card_column_1'} className={colCls}>
-                  <Card hover style={{ height: '300px' }} className="Imn-shadow-1g lmn-p-3 1mn-mb-5 Imn-bg-white len-border lan-border-strong icgds-responsive-demo">
-                    <p header className="Imn-h3 Imn-ph-Mpx">
+              <El className="lmn-row lmn-p-12px 1mn-px-sm-0">
+                <El key={"card_column_1"} className={colCls}>
+                  <Card
+                    hover
+                    style={{ height: '300px' }}
+                    className="Imn-shadow-1g 1mn-p-3 1mn-mb-5 1mn-bg-white lmn-border Imn-border-strong icgds-responsive-demo"
+                  >
+                    <p header className="Imn-h3 1mn-pb-24px">
                       Success Rate
                     </p>
-                    <Card body>
-                      <div style={{ padding: '@px', marginTop: 'epx' }}>
-                        <SuccessRate selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                    <Card.Body>
+                      <div style={{ padding: '0px', marginTop: '0px' }}>
+                        <SuccessRate
+                          selectedTeam={selectedTeam}
+                          IsStyleMode={false}
+                          themeConfig={{}}
+                        />
                       </div>
-                    </Card>
+                    </Card.Body>
                   </Card>
                 </El>
-                <El key={'card_column_2'} className={colCls}>
-                  <Card hover style={{ height: '300px' }} className="Imn-shadow-lg lan-p-3 1mn-mb:5 1mn-bg-white Imn-border len-border-strong icgds-responsive-demo">
-                    <p header className="1mn-h3 len-pb-24px">
+                <El key={"card_column_2"} className={colCls}>
+                  <Card
+                    hover
+                    style={{ height: '300px' }}
+                    className="Imn-shadow-1g 1mn-p-3 lmn-mb-5 lmn-bg-white lmn-border Imn-border-strong icgds-responsive-demo"
+                  >
+                    <p header className="1mn-h3 1mn-pb-24px">
                       Backlog Health
                     </p>
-                    <Card body>
-                      <div style={{ padding: 'epx', marginTop: '8px' }}>
-                        <FetchData selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                    <Card.Body>
+                      <div style={{ padding: '0px', marginTop: '0px' }}>
+                        <FetchData
+                          selectedTeam={selectedTeam}
+                          isStyleMode={false}
+                          themeConfig={{}}
+                        />
                       </div>
-                    </Card>
+                    </Card.Body>
                   </Card>
                 </El>
-                <El key={'card_column_3'} className={colCls}>
-                  <Card hover style={{ height: '300px' }} className="Imn-shadow-Ig len-p-3 lmn-mb-5 1mm-bg-white Imn-border len-border-strong icgds-responsive-demo">
-                    <p header className="1mn-h3 Imn-pb-24px ">
+                <El key={"card_column_3"} className={colCls}>
+                  <Card
+                    hover
+                    style={{ height: '300px' }}
+                    className="Imn-shadow-1g Imn-p-3 Imn-mb-5 lmn-bg-white lmn-border Imn-border-strong icgds-responsive-demo"
+                  >
+                    <p header className="Imn-h3 1mn-pb-24px">
                       Churn Rate
                     </p>
-                    <Card body>
-                      <div style={{ padding: '0px', marginTop: '0px' }}>{/* <SentimentBarChart isStyleMode={false} themeconfig={{}} /> */}</div>
-                    </Card>
+                    <Card.Body>
+                      <div style={{ padding: '0px', marginTop: '0px' }}>
+                        {/* <SentimentBarChart
+                          isStyleMode={false}
+                          themeConfig={{}}
+                        /> */}
+                      </div>
+                    </Card.Body>
                   </Card>
                 </El>
-                <El key={'card_column_4'} className={colCls}>
-                  <Card hover style={{ height: '380px' }} className="1mn-shadow. 1g Imn-p-3 1mn-mb-5 lmn-bg-white len-border len-border-strong icgds-responsive-demo">
-                    <p header className="Imn-h3 lmn-pb-2px">
-                      Capacity Utilization {/* {console.log('CapacityUtil:', CapacityUtil)} */}
+                <El key={`card_column_4`} className={colCls}>
+                  <Card
+                    hover
+                    style={{ height: '300px' }}
+                    className="Imn-shadow-1g Imn-p-3 Imn-mb-5 lmn-bg-white lmn-border Imn-border-strong icgds-responsive-demo"
+                  >
+                    <p header className="Imn-h3 lmn-pb-24px">
+                      Capacity Utilization
+                      {/* { console.log('CapacityUtil : ', CapacityUtil) } */}
                     </p>
-                    <Card body>
-                      <div style={{ padding: '0px', marginTop: '@px' }}>
-                        <CapacityUtil selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                    <Card.Body>
+                      <div style={{ padding: '0px', marginTop: '0px' }}>
+                        <CapacityUtil
+                          selectedTeam={selectedTeam}
+                          isStyleMode={false}
+                          themeConfig={{}}
+                        />
                       </div>
-                    </Card>
+                    </Card.Body>
                   </Card>
                 </El>
               </El>
-              <El className="1mn-row lmn-p-12px lmn-px-sm-0">
+              <El className="Imn-row lmn-p-12px 1mn-px-sm-0">
                 <El className={sentCls}>
-                  <Card style={{ height: '250px' }} className="1mn-px-2px lmn-p-12px 1mn-shadow-lg lmn-p-3 1mn-mb-5 lmn-bg-white lmn-border lmn-border-strong">
-                    <div className="1mn-px-12px lmn-p-12px">
-                      <SentimentBarChart selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                  <Card
+                    style={{ height: '250px' }}
+                    className="1mn-px-2px Imn-p-12px Imn-shadow-1g 1mn-p-3 lmn-mb-5 Imn-bg-white lmn-border Imn-border-strong"
+                  >
+                    <div className="Imn-px-12px 1mn-p-12px">
+                      {/* <LineChart selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} /> */}
+                      <SentimentBarChart
+                        selectedTeam={selectedTeam}
+                        isStyleMode={false}
+                        themeConfig={{}}
+                      />
                     </div>
                   </Card>
                 </El>
               </El>
               <El className={cardCls}>
-                <Card hover ref={cardHeaderRef} style={{ height: '450px' }} className="1mn-shadow-lg lmn-p-3 1mn-mb-5 lmn-bg-white lmn-border lmn-border-strong lmn-col-12 1mn-mt-24px 1mn-page-card icgds-responsive-demo">
-                  <p header className="1mn-h2 1mn-pb-24px">
+                <Card
+                  hover
+                  ref={gridCardRef}
+                  style={{ height: '450px' }}
+                  className="Imn-shadow-lg 1mn-p-3 lmn-mb-5 lmn-bg-white lmn-border Imn-border-strong lmn-col-12 Imn-mt-24px 1mn-page-card icgds-responsive-demo"
+                >
+                  <p header className="Imn-h2 1mn-pb-24px">
                     Chart Section
                   </p>
-                  <Card body>
+                  <Card.Body>
                     <div style={{ padding: '20px', marginTop: '20px' }}>
-                      <LineChart selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                      <LineChart
+                        selectedTeam={selectedTeam}
+                        isStyleMode={false}
+                        themeConfig={{}}
+                      />
+                      {/* <SentimentBarChart selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} /> */}
                     </div>
-                  </Card>
+                  </Card.Body>
                 </Card>
               </El>
             </Tab.TabPane>
             <Tab.TabPane tab="Finance" key="2">
-              Perspective: Finance
+              Perspective : Finance
             </Tab.TabPane>
             <Tab.TabPane tab="Architecture" key="3">
-              Perspective: Architecture
+              Perspective : Architecture
             </Tab.TabPane>
           </Tab>
         </div>
