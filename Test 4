@@ -1,127 +1,335 @@
-import React, { useState, useEffect } from 'react';
-import HighchartsReact from 'highcharts-react-official';
-import Highcharts from 'highcharts';
-import { merge } from 'lodash';
+import React, { useState, useRef, useEffect } from 'react';
+import cx from 'classnames';
+import { UIShell, GlobalFooter, AvatarMenu } from '@citi-icg-172888/1cgds-patterns-react';
+import CustomizedContent from './CustomizedContent';
+import { Tab, themes, Menu, Switch, Button, El, Card, Select } from '@citi-icg-172888/icgds-react';
+import LineChart from './DataFetch/LineChart';
+import FetchData from '../DataFetch/FetchData';
+import SuccessRate from './DataFetch/SuccessRate';
+import CapacityUtil from './DataFetch/CapacityUtil';
+import SentimentBarChart from './DataFetch/SentimentAnalysis';
+import citiLogoFooter from '@citi-icq-172888/1cgds-icons/logos/Citi_Logo.svg';
+import citiLogo from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo.svg';
+import citiLogoAlt from '@citi-icg-172888/icgds-icons/logos/28px/Citi_Logo_Alternative.svg';
+import Item from 'antd/es/list/Item';
 
-export default function SentimentBarChart({ isStyleMode, themeConfig }) {
-    const [chartOptions, setChartOptions] = useState({});
+export default function LeftNav() {
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [profile, setProfile] = useState('');
+  const [logInTime, setLogInTime] = useState(new Date().toLocaleTimeString());
+  const [teams, setTeams] = useState([]);
+  const [theme, setTheme] = useState(themes.LIGHT);
+  const [isFluidContainer, setIsFluidContainer] = useState(true);
+  const [isOneCol, setIsOneCol] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(0);
+  const [cardHeaderWidth, setCardHeaderWidth] = useState(0);
+  const [gridCardWidth, setGridCardWidth] = useState(0);
 
-    const modeConfig = {
-        chart: {
-            styledMode: isStyleMode,
-        },
+  const cardHeaderRef = useRef();
+  const gridCardRef = useRef();
+  const firstRenderRef = useRef(true);
+
+  const gridBreakpoints = [
+    { key: 'xs', value: 8 },
+    { key: 'sm', value: 584 },
+    { key: 'md', value: 784 },
+    { key: 'lg', value: 1872 },
+    { key: 'xl', value: 1264 },
+    { key: '2xl', value: 1688 },
+  ];
+
+  const gridBreakpointKeys = gridBreakpoints.map((v) => v.key);
+  const gridBreakpointValues = gridBreakpoints.map((v) => v.value);
+
+  const links = [
+    { label: 'Terms and Conditions', url: 'https://secure.citi.com/brandcentral/site/assets/downloads/footer/citi_brand_central_privacy_policy.pdf' },
+    { label: 'Contact Us', url: 'https://secure.citi.com/brandcentral/site/contact' },
+    { label: 'Our Mission and Value Proposition', url: 'https://www.citigroup.com/citi/about/mission-and-value-proposition.html' },
+  ];
+
+  useEffect(() => {
+    fetch('http://sd-6/1h-4rv0:JeJe/api/teams')
+      .then((response) => response.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTeams(data.map((item) => [item[0], item[1]]));
+        } else {
+          console.error('Invalid data received from API');
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching teams:', error);
+      });
+  }, []);
+
+  const { Option } = Select;
+
+  const onChange = (value) => {
+    console.log('Selected team:', value);
+  };
+
+  const { SubMenu } = Menu;
+
+  const handleClick = (e) => {
+    if (e.keyPath.includes('theme')) {
+      setTheme(e.key);
+    } else if (e.keyPath.includes('profile')) {
+      setProfile(e.key);
+    }
+  };
+
+  const login = () => {
+    setLogInTime(new Date().toLocaleTimeString());
+  };
+
+  const loginButton = <Button onClick={login}>Log in</Button>;
+
+  const onLogout = () => {
+    setLogInTime(undefined);
+  };
+
+  const removePadding = isOneCol && (breakpointText === 'SM' || breakpointText === 'XS');
+
+  const updateWidth = () => {
+    setWindowWidth(window.innerWidth);
+    if (cardHeaderRef && cardHeaderRef.current) {
+      setCardHeaderWidth(cardHeaderRef.current.offsetWidth);
+    }
+    if (gridCardRef && gridCardRef.current) {
+      setGridCardWidth(gridCardRef.current.offsetWidth);
+    }
+  };
+
+  const colCls = isOneCol ? '1mm-col-2' : 'lmn-col-3 lmn-wt-24px';
+  const cardCls = isOneCol ? 'Im-col-2' : 'Imn-col-11 Imn-st-0px';
+  const sentCls = 'len-col-11 Imn-mt-24px';
+
+  useEffect(() => {
+    if (firstRenderRef.current === true) {
+      firstRenderRef.current = false;
+      updateWidth();
+    }
+  }, [firstRenderRef.current]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateWidth);
+    return () => {
+      window.removeEventListener('resize', updateWidth);
     };
+  }, []);
 
-    useEffect(() => {
-        // Fetch sentiment data from your API endpoint
-        fetch('/api/sentiment')
-            .then(response => response.json())
-            .then(data => {
-                // Process the data to calculate total sentiment counts
-                let negativeCount = 0;
-                let neutralCount = 0;
-                let positiveCount = 0;
+  const innerMenu = (
+    <Menu mode="vertical" selectable={false} onClick={handleClick}>
+      <SubMenu key="theme" title="Theme">
+        <Menu.Item className={theme === 'light' ? 'selected' : ''} key="light">
+          Light
+        </Menu.Item>
+        <Menu.Item className={theme === 'dark' ? 'selected' : ''} key="dark">
+          Dark
+        </Menu.Item>
+      </SubMenu>
+      <SubMenu key="profile" title="Profile">
+        <Menu.Item key="institutional" className={profile === 'institutional' ? 'selected' : ''}>
+          Institutional
+        </Menu.Item>
+        <Menu.Item key="corporation" className={profile === 'corporation' ? 'selected' : ''}>
+          Corporation
+        </Menu.Item>
+        <SubMenu key="other" title="Other">
+          <Menu.Item key="other1" className={profile === 'other1' ? 'selected' : ''}>
+            Option Other 1
+          </Menu.Item>
+          <Menu.Item key="other2" className={profile === 'other2' ? 'selected' : ''}>
+            Option Other 2
+          </Menu.Item>
+        </SubMenu>
+      </SubMenu>
+      <Menu.Item key="newSearch" className="len-d-flex">
+        <span>New Search</span>
+        <Switch wrapperClass="len-ml-auto" />
+      </Menu.Item>
+      <Menu.Divider />
+      <Menu.Item key="openChart">Open Chart</Menu.Item>
+      <Menu.Item key="share">Share This Page</Menu.Item>
+      <Menu.Item key="homepage">Set Homepage</Menu.Item>
+      <Menu.Divider />
+      <Menu.Item key="mimic">Mimic</Menu.Item>
+      <Menu.Divider />
+      <Menu.Item key="reset">Reset Password</Menu.Item>
+      <Menu.Item key="switch">Switch Account</Menu.Item>
+    </Menu>
+  );
 
-                data.forEach(item => {
-                    negativeCount += item.negativeScore || 0;
-                    neutralCount += item.neutralScore || 0;
-                    positiveCount += item.positiveScore || 0;
-                });
-
-                // Calculate total count
-                const totalCount = negativeCount + neutralCount + positiveCount;
-
-                // Determine overall sentiment based on counts
-                let overallSentiment = 'Neutral';
-                if (positiveCount > negativeCount && positiveCount > neutralCount) {
-                    overallSentiment = 'Overwhelmingly Positive';
-                } else if (negativeCount > positiveCount && negativeCount > neutralCount) {
-                    overallSentiment = 'Overwhelmingly Negative';
-                }
-
-                const options = {
-                    chart: {
-                        type: 'bar',
-                        renderTo: 'container-bar',
-                        backgroundColor: '#f8f9fa' // Light background like the image
-                    },
-                    title: {
-                        text: 'COMMUNITY SENTIMENT',
-                        align: 'left'
-                    },
-                    subtitle: {
-                        text: overallSentiment,
-                        align: 'left',
-                        style: {
-                            fontWeight: 'bold',
-                            fontSize: '18px'
-                        }
-                    },
-                    xAxis: {
-                        categories: ['Negative', 'Neutral', 'Positive'],
-                        title: {
-                            text: null
-                        },
-                        labels: {
-                            style: {
-                                fontSize: '14px'
-                            }
-                        }
-                    },
-                    yAxis: {
-                        title: {
-                            text: null
-                        },
-                        labels: {
-                            enabled: false // Hide y-axis labels
-                        },
-                        gridLineWidth: 0 // Remove grid lines
-                    },
-                    series: [{
-                        name: 'Sentiment Count',
-                        data: [negativeCount, neutralCount, positiveCount],
-                        colors: ['#dc3545', '#ffc107', '#28a745'], // Red, yellow, green
-                        dataLabels: {
-                            enabled: true,
-                            format: '{y}',
-                            style: {
-                                fontSize: '14px'
-                            }
-                        }
-                    }],
-                    legend: {
-                        enabled: false // Hide legend
-                    },
-                    plotOptions: {
-                        bar: {
-                            borderRadius: '5px',
-                            dataLabels: {
-                                enabled: true
-                            }
-                        }
-                    },
-                    credits: {
-                        enabled: false // Remove Highcharts credits
-                    },
-                    tooltip: {
-                        enabled: false // Disable tooltips
-                    }
-                };
-                setChartOptions(options);
-            })
-            .catch(error => {
-                console.error('Error fetching sentiment data', error);
-            });
-    }, [isStyleMode]); // Add isStyleMode as dependency
-
-    return (
-        <div id="container-bar">
-            <HighchartsReact
-                highcharts={Highcharts}
-                options={merge({}, chartOptions, isStyleMode ? themeConfig : {}, modeConfig)}
-                immutable={true}
-            />
+  return (
+    <div className={`icgds ${theme}-theme`}>
+      <UIShell
+        fluidContainer={true}
+        showMenu={false}
+        logoSrc={[citiLogo, citiLogoAlt]}
+        logoHeight={28}
+        appTitle="Engineering Productivity Portal"
+        showSearch={true}
+        searchOptions={states}
+        navClasses="lmn-sticky-top"
+        showThemeSwitch={true}
+        showAppSwitch={false}
+        showAvatar={AvatarMenu}
+        sideBarExpanded={false}
+        theme={theme}
+        onThemeChange={(currTheme) => setTheme(currTheme)}
+        showSideBar={true}
+        sideBarItems={[
+          {
+            key: 'menu1',
+            icon: 'home',
+            title: 'Home',
+            tooltip: false,
+            content: 'Home',
+            disabled: false,
+            fluidContainer: { isFluidContainer },
+          },
+          {
+            key: 'menu2',
+            icon: 'components',
+            title: false,
+            tooltip: 'Contexts',
+            content: (
+              <div>
+                <Menu onClick={handleClick} style={{ width: 150 }} defaultSelectedKeys={['']} defaultOpenKeys={['']} mode="inline">
+                  <SubMenu key="sub1" title={<span>Contexts</span>}>
+                    <Menu.Item key="1">Sprint</Menu.Item>
+                    <Menu.Item key="2">Release</Menu.Item>
+                    <Menu.Item key="3">Project</Menu.Item>
+                  </SubMenu>
+                </Menu>
+              </div>
+            ),
+          },
+          {
+            key: 'menu4',
+            icon: 'stack',
+            title: 'PlaylistBuilder',
+            tooltip: false,
+            content: 'Playlist builder',
+            disabled: false,
+          },
+          {
+            key: 'menu5',
+            icon: 'play-circle-o',
+            title: 'SuggestedPlaylist',
+            tooltip: false,
+            content: 'Suggested Playlist',
+            disabled: false,
+          },
+        ]}
+        footerRender={<GlobalFooter logo={citiLogoFooter} links={links} />}
+        avatarRender={
+          <AvatarMenu
+            displayType="anonymous"
+            soeld="tn12345"
+            fullName="Test"
+            email="test@citi.com"
+            loginTime={logInTime}
+            loggedOutRender={loginButton}
+            menu={innerMenu}
+            onLogout={onLogout}
+          />
+        }
+      >
+        <div>
+          <Tab defaultActiveKey="1">
+            <Tab.TabPane tab="Work" key="1">
+              <El className="Imn-p-12px len-px-sm-0 icgds-responsive-demo">
+                <Card hover ref={cardHeaderRef} className="lan-shadow-1g 1mn-p-3 Imn-mb-5 lmn-bg-white lan-border lmn-border-strong lmn-col-12 1mn-mt-4px">
+                  <Card body>
+                    <div id="app-content" className="lmn-d-flex Imn-justify-content-center">
+                      <div className="1mn-pr-24p 1mn-row lan-p-8px icgds-responsive-demo len-font-weight-bold">Team Name :</div>
+                      {teams.length > 0 && (
+                        <CustomizedContent teams={teams.map((item) => [item[0], item[1]])} onTeamSelect={(teamId) => setSelectedTeam(teamId)} />
+                      )}
+                    </div>
+                  </Card>
+                </Card>
+              </El>
+              <El className="1mn-row lmn-p-12px len-px-sm-8">
+                <El key={'card_column_1'} className={colCls}>
+                  <Card hover style={{ height: '300px' }} className="Imn-shadow-1g lmn-p-3 1mn-mb-5 Imn-bg-white len-border lan-border-strong icgds-responsive-demo">
+                    <p header className="Imn-h3 Imn-ph-Mpx">
+                      Success Rate
+                    </p>
+                    <Card body>
+                      <div style={{ padding: '@px', marginTop: 'epx' }}>
+                        <SuccessRate selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                      </div>
+                    </Card>
+                  </Card>
+                </El>
+                <El key={'card_column_2'} className={colCls}>
+                  <Card hover style={{ height: '300px' }} className="Imn-shadow-lg lan-p-3 1mn-mb:5 1mn-bg-white Imn-border len-border-strong icgds-responsive-demo">
+                    <p header className="1mn-h3 len-pb-24px">
+                      Backlog Health
+                    </p>
+                    <Card body>
+                      <div style={{ padding: 'epx', marginTop: '8px' }}>
+                        <FetchData selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                      </div>
+                    </Card>
+                  </Card>
+                </El>
+                <El key={'card_column_3'} className={colCls}>
+                  <Card hover style={{ height: '300px' }} className="Imn-shadow-Ig len-p-3 lmn-mb-5 1mm-bg-white Imn-border len-border-strong icgds-responsive-demo">
+                    <p header className="1mn-h3 Imn-pb-24px ">
+                      Churn Rate
+                    </p>
+                    <Card body>
+                      <div style={{ padding: '0px', marginTop: '0px' }}>{/* <SentimentBarChart isStyleMode={false} themeconfig={{}} /> */}</div>
+                    </Card>
+                  </Card>
+                </El>
+                <El key={'card_column_4'} className={colCls}>
+                  <Card hover style={{ height: '380px' }} className="1mn-shadow. 1g Imn-p-3 1mn-mb-5 lmn-bg-white len-border len-border-strong icgds-responsive-demo">
+                    <p header className="Imn-h3 lmn-pb-2px">
+                      Capacity Utilization {/* {console.log('CapacityUtil:', CapacityUtil)} */}
+                    </p>
+                    <Card body>
+                      <div style={{ padding: '0px', marginTop: '@px' }}>
+                        <CapacityUtil selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                      </div>
+                    </Card>
+                  </Card>
+                </El>
+              </El>
+              <El className="1mn-row lmn-p-12px lmn-px-sm-0">
+                <El className={sentCls}>
+                  <Card style={{ height: '250px' }} className="1mn-px-2px lmn-p-12px 1mn-shadow-lg lmn-p-3 1mn-mb-5 lmn-bg-white lmn-border lmn-border-strong">
+                    <div className="1mn-px-12px lmn-p-12px">
+                      <SentimentBarChart selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                    </div>
+                  </Card>
+                </El>
+              </El>
+              <El className={cardCls}>
+                <Card hover ref={cardHeaderRef} style={{ height: '450px' }} className="1mn-shadow-lg lmn-p-3 1mn-mb-5 lmn-bg-white lmn-border lmn-border-strong lmn-col-12 1mn-mt-24px 1mn-page-card icgds-responsive-demo">
+                  <p header className="1mn-h2 1mn-pb-24px">
+                    Chart Section
+                  </p>
+                  <Card body>
+                    <div style={{ padding: '20px', marginTop: '20px' }}>
+                      <LineChart selectedTeam={selectedTeam} isStyleMode={false} themeConfig={{}} />
+                    </div>
+                  </Card>
+                </Card>
+              </El>
+            </Tab.TabPane>
+            <Tab.TabPane tab="Finance" key="2">
+              Perspective: Finance
+            </Tab.TabPane>
+            <Tab.TabPane tab="Architecture" key="3">
+              Perspective: Architecture
+            </Tab.TabPane>
+          </Tab>
         </div>
-    );
+      </UIShell>
+    </div>
+  );
 }
- 
