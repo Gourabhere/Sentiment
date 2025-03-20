@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import HighchartsReact from 'highcharts-react-official';
 import Highcharts from 'highcharts';
+import { merge } from 'lodash';
 
-function SentimentBarChart() {
+export default function SentimentBarChart({ isStyleMode, themeConfig }) {
     const [chartOptions, setChartOptions] = useState({});
+
+    const modeConfig = {
+        chart: {
+            styledMode: isStyleMode,
+        },
+    };
 
     useEffect(() => {
         // Fetch sentiment data from your API endpoint
@@ -32,10 +39,10 @@ function SentimentBarChart() {
                     overallSentiment = 'Overwhelmingly Negative';
                 }
 
-                // Set chart options for a bar chart
-                setChartOptions({
+                const options = {
                     chart: {
-                        type: 'bar',
+                        type: 'bar', // Use bar chart, but we'll configure it for a segmented bar
+                        renderTo: 'container-bar',
                         backgroundColor: '#f8f9fa' // Light background like the image
                     },
                     title: {
@@ -51,14 +58,12 @@ function SentimentBarChart() {
                         }
                     },
                     xAxis: {
-                        categories: ['Negative', 'Neutral', 'Positive'],
+                        categories: ['Sentiment'], // Single category
                         title: {
                             text: null
                         },
                         labels: {
-                            style: {
-                                fontSize: '14px'
-                            }
+                            enabled: false // Hide category labels
                         }
                     },
                     yAxis: {
@@ -71,12 +76,26 @@ function SentimentBarChart() {
                         gridLineWidth: 0 // Remove grid lines
                     },
                     series: [{
-                        name: 'Sentiment Count',
-                        data: [negativeCount, neutralCount, positiveCount],
-                        colors: ['#dc3545', '#ffc107', '#28a745'], // Red, yellow, green
+                        name: 'Sentiment',
+                        data: [
+                            { y: negativeCount, color: '#dc3545' }, // Red
+                            { y: neutralCount, color: '#ffc107' },  // Yellow
+                            { y: positiveCount, color: '#28a745' }  // Green
+                        ],
+                        stacking: 'normal', // Use stacking to create a segmented bar
                         dataLabels: {
                             enabled: true,
-                            format: '{y}',
+                            formatter: function () {
+                                let label = this.point.y;
+                                if (this.point.color === '#dc3545') {
+                                    label += ' 🙁'; // Negative emoji
+                                } else if (this.point.color === '#ffc107') {
+                                    label += ' 😐'; // Neutral emoji
+                                } else if (this.point.color === '#28a745') {
+                                    label += ' 🙂'; // Positive emoji
+                                }
+                                return label;
+                            },
                             style: {
                                 fontSize: '14px'
                             }
@@ -99,19 +118,21 @@ function SentimentBarChart() {
                     tooltip: {
                         enabled: false // Disable tooltips
                     }
-                });
+                };
+                setChartOptions(options);
             })
             .catch(error => {
                 console.error('Error fetching sentiment data', error);
             });
-    }, []);
+    }, [isStyleMode]); // Add isStyleMode as dependency
 
     return (
-        <div>
-            <HighchartsReact highcharts={Highcharts} options={chartOptions} />
+        <div id="container-bar">
+            <HighchartsReact
+                highcharts={Highcharts}
+                options={merge({}, chartOptions, isStyleMode ? themeConfig : {}, modeConfig)}
+                immutable={true}
+            />
         </div>
     );
 }
-
-export default SentimentBarChart;
- 
