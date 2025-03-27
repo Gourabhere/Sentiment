@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Select, Option, Card } from '@citi-icg-172888/icgds-react';
+import { Select, Option, Card, Button } from '@citi-icg-172888/icgds-react';
 
 export default function CustomizeFilter() {
   // State to store selected values for each filter
@@ -22,6 +22,35 @@ export default function CustomizeFilter() {
       [filterName]: value,
     }));
     console.log(`Selected ${filterName}: ${value}`);
+  };
+
+  // Handle Apply button click
+  const handleApply = () => {
+    // Log the selected filters (you can replace this with your own function)
+    console.log('Applied Filters:', filters);
+
+    // Example: Invoke a function to handle the applied filters
+    applyFilters(filters);
+  };
+
+  // Function to handle applied filters (replace with your actual logic)
+  const applyFilters = (filterValues) => {
+    // This is a placeholder function; replace it with your actual logic
+    console.log('Invoking applyFilters with values:', filterValues);
+    // Example: You might pass these values to a parent component, make an API call, etc.
+  };
+
+  // Handle Cancel button click (reset selections)
+  const handleCancel = () => {
+    setFilters({
+      sprint: '',
+      domain: '',
+      tpm: '',
+      issueType: '',
+      capability: '',
+      productOwner: '',
+    });
+    console.log('Filters reset');
   };
 
   // Sample data for dropdowns (you can replace these with actual data)
@@ -97,6 +126,7 @@ export default function CustomizeFilter() {
             optionLabelProp="label"
             customizeFilter={customizeFilter}
             getPopupContainer={() => document.querySelector('#app-content')}
+            value={filters.sprint}
           >
             {sprintOptions.map((option) => (
               <Option
@@ -132,6 +162,7 @@ export default function CustomizeFilter() {
             optionLabelProp="label"
             customizeFilter={customizeFilter}
             getPopupContainer={() => document.querySelector('#app-content')}
+            value={filters.domain}
           >
             {domainOptions.map((option) => (
               <Option
@@ -170,6 +201,7 @@ export default function CustomizeFilter() {
             optionLabelProp="label"
             customizeFilter={customizeFilter}
             getPopupContainer={() => document.querySelector('#app-content')}
+            value={filters.tpm}
           >
             {tpmOptions.map((option) => (
               <Option
@@ -205,6 +237,7 @@ export default function CustomizeFilter() {
             optionLabelProp="label"
             customizeFilter={customizeFilter}
             getPopupContainer={() => document.querySelector('#app-content')}
+            value={filters.issueType}
           >
             {issueTypeOptions.map((option) => (
               <Option
@@ -243,6 +276,7 @@ export default function CustomizeFilter() {
             optionLabelProp="label"
             customizeFilter={customizeFilter}
             getPopupContainer={() => document.querySelector('#app-content')}
+            value={filters.capability}
           >
             {capabilityOptions.map((option) => (
               <Option
@@ -278,6 +312,7 @@ export default function CustomizeFilter() {
             optionLabelProp="label"
             customizeFilter={customizeFilter}
             getPopupContainer={() => document.querySelector('#app-content')}
+            value={filters.productOwner}
           >
             {productOwnerOptions.map((option) => (
               <Option
@@ -291,6 +326,16 @@ export default function CustomizeFilter() {
             ))}
           </Select>
         </div>
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+        <Button onClick={handleCancel} style={{ background: 'transparent', border: '1px solid #666' }}>
+          Cancel
+        </Button>
+        <Button onClick={handleApply} style={{ background: '#005ea2', color: '#fff', border: 'none' }}>
+          Apply
+        </Button>
       </div>
     </Card>
   );
