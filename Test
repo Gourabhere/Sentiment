@@ -1,67 +1,95 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Select, Option, Card } from '@citi-icg-172888/icgds-react';
+import { Select, Option, Card, Button, Input } from '@citi-icg-172888/icgds-react';
 
-export default function CustomizeFilter() {
-  // State to store selected values for each filter
-  const [filters, setFilters] = useState({
-    sprint: '',
+export default function RecognitionForm() {
+  // State to store form values
+  const [formData, setFormData] = useState({
+    nameOfStar: '',
+    manager: '',
+    scrumTeam: '',
     domain: '',
-    tpm: '',
-    issueType: '',
-    capability: '',
-    productOwner: '',
+    typeOfRecognition: '',
+    recognitionProvided: '',
+    sprint: '',
+    role: '',
+    attachment: null,
   });
 
   // Ref for the card header
   const cardHeaderRef = useRef();
 
-  // Handle change for each filter
-  const onChange = (filterName, value) => {
-    setFilters((prev) => ({
+  // Handle input changes
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({
       ...prev,
-      [filterName]: value,
+      [field]: value,
     }));
-    console.log(`Selected ${filterName}: ${value}`);
+    console.log(`Updated ${field}: ${value}`);
   };
 
-  // Sample data for dropdowns (you can replace these with actual data)
-  const sprintOptions = [
-    { title: 'Sprint 1', label: 'Sprint 1', value: 'sprint1' },
-    { title: 'Sprint 2', label: 'Sprint 2', value: 'sprint2' },
-    { title: 'Sprint 3', label: 'Sprint 3', value: 'sprint3' },
-  ];
+  // Handle file upload
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setFormData((prev) => ({
+      ...prev,
+      attachment: file,
+    }));
+    console.log('Selected file:', file);
+  };
 
+  // Handle form submission
+  const handleSubmit = () => {
+    console.log('Form submitted:', formData);
+    // Add your submission logic here (e.g., API call)
+  };
+
+  // Handle form cancellation
+  const handleCancel = () => {
+    setFormData({
+      nameOfStar: '',
+      manager: '',
+      scrumTeam: '',
+      domain: '',
+      typeOfRecognition: '',
+      recognitionProvided: '',
+      sprint: '',
+      role: '',
+      attachment: null,
+    });
+    console.log('Form cancelled');
+  };
+
+  // Sample data for dropdowns (replace with actual data)
   const domainOptions = [
     { title: 'Domain A', label: 'Domain A', value: 'domainA' },
     { title: 'Domain B', label: 'Domain B', value: 'domainB' },
     { title: 'Domain C', label: 'Domain C', value: 'domainC' },
   ];
 
-  const tpmOptions = [
-    { title: 'TPM 1', label: 'TPM 1', value: 'tpm1' },
-    { title: 'TPM 2', label: 'TPM 2', value: 'tpm2' },
-    { title: 'TPM 3', label: 'TPM 3', value: 'tpm3' },
+  const typeOfRecognitionOptions = [
+    { title: 'Award', label: 'Award', value: 'award' },
+    { title: 'Certificate', label: 'Certificate', value: 'certificate' },
+    { title: 'Bonus', label: 'Bonus', value: 'bonus' },
   ];
 
-  const issueTypeOptions = [
-    { title: 'Bug', label: 'Bug', value: 'bug' },
-    { title: 'Feature', label: 'Feature', value: 'feature' },
-    { title: 'Task', label: 'Task', value: 'task' },
+  const recognitionProvidedOptions = [
+    { title: 'Yes', label: 'Yes', value: 'yes' },
+    { title: 'No', label: 'No', value: 'no' },
   ];
 
-  const capabilityOptions = [
-    { title: 'Capability 1', label: 'Capability 1', value: 'capability1' },
-    { title: 'Capability 2', label: 'Capability 2', value: 'capability2' },
-    { title: 'Capability 3', label: 'Capability 3', value: 'capability3' },
+  const sprintOptions = [
+    { title: 'Sprint 1', label: 'Sprint 1', value: 'sprint1' },
+    { title: 'Sprint 2', label: 'Sprint 2', value: 'sprint2' },
+    { title: 'Sprint 3', label: 'Sprint 3', value: 'sprint3' },
   ];
 
-  const productOwnerOptions = [
-    { title: 'Owner 1', label: 'Owner 1', value: 'owner1' },
-    { title: 'Owner 2', label: 'Owner 2', value: 'owner2' },
-    { title: 'Owner 3', label: 'Owner 3', value: 'owner3' },
+  const roleOptions = [
+    { title: 'Developer', label: 'Developer', value: 'developer' },
+    { title: 'Tester', label: 'Tester', value: 'tester' },
+    { title: 'Designer', label: 'Designer', value: 'designer' },
   ];
 
-  // Common filter function for search
+  // Common filter function for search in dropdowns
   const customizeFilter = (input, option) =>
     option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0;
 
@@ -70,175 +98,288 @@ export default function CustomizeFilter() {
       hover
       ref={cardHeaderRef}
       className="lmn-shadow-lg lmn-p-3 lmn-mb-5 lmn-bg-white lmn-border lmn-border-strong lmn-col-12 lmn-mt-4px"
+      style={{ maxWidth: '800px', margin: '0 auto' }}
     >
-      <h3 style={{ fontWeight: 'bold', marginBottom: '20px' }}>Extended Filters</h3>
-
-      {/* Sprint Filter */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: '#666' }}>
-          Sprint
-        </label>
-        <Select
-          showSearch
-          highlightOption
-          style={{ width: '100%' }}
-          placeholder="Select a sprint"
-          onChange={(value) => onChange('sprint', value)}
-          optionLabelProp="label"
-          customizeFilter={customizeFilter}
-          getPopupContainer={() => document.querySelector('#app-content')}
-        >
-          {sprintOptions.map((option) => (
-            <Option
-              key={option.value}
-              title={option.title}
-              label={option.label}
-              value={option.value}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+        {/* Left Column */}
+        <div style={{ flex: '1', minWidth: '300px' }}>
+          {/* Name of Star */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '14px',
+                color: '#333',
+              }}
             >
-              {option.label}
-            </Option>
-          ))}
-        </Select>
+              Name of Star <span style={{ color: 'red' }}>*</span>
+            </label>
+            <Input
+              placeholder="Enter text here"
+              value={formData.nameOfStar}
+              onChange={(e) => handleInputChange('nameOfStar', e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          {/* Manager */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '14px',
+                color: '#333',
+              }}
+            >
+              Manager
+            </label>
+            <Input
+              placeholder="Enter text or email"
+              value={formData.manager}
+              onChange={(e) => handleInputChange('manager', e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          {/* Scrum Team */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '14px',
+                color: '#333',
+              }}
+            >
+              Scrum Team <span style={{ color: 'red' }}>*</span>
+            </label>
+            <Input
+              placeholder="Enter text here"
+              value={formData.scrumTeam}
+              onChange={(e) => handleInputChange('scrumTeam', e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          {/* Domain */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '14px',
+                color: '#333',
+              }}
+            >
+              Domain
+            </label>
+            <Select
+              showSearch
+              highlightOption
+              style={{ width: '100%' }}
+              placeholder="Select an option"
+              onChange={(value) => handleInputChange('domain', value)}
+              optionLabelProp="label"
+              customizeFilter={customizeFilter}
+              getPopupContainer={() => document.querySelector('#app-content')}
+            >
+              {domainOptions.map((option) => (
+                <Option
+                  key={option.value}
+                  title={option.title}
+                  label={option.label}
+                  value={option.value}
+                >
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Type of Recognition */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '14px',
+                color: '#333',
+              }}
+            >
+              Type of Recognition
+            </label>
+            <Select
+              showSearch
+              highlightOption
+              style={{ width: '100%' }}
+              placeholder="Select an option"
+              onChange={(value) => handleInputChange('typeOfRecognition', value)}
+              optionLabelProp="label"
+              customizeFilter={customizeFilter}
+              getPopupContainer={() => document.querySelector('#app-content')}
+            >
+              {typeOfRecognitionOptions.map((option) => (
+                <Option
+                  key={option.value}
+                  title={option.title}
+                  label={option.label}
+                  value={option.value}
+                >
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div style={{ flex: '1', minWidth: '300px' }}>
+          {/* Recognition Provided */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '14px',
+                color: '#333',
+              }}
+            >
+              Recognition Provided
+            </label>
+            <Select
+              showSearch
+              highlightOption
+              style={{ width: '100%' }}
+              placeholder="Select an option"
+              onChange={(value) => handleInputChange('recognitionProvided', value)}
+              optionLabelProp="label"
+              customizeFilter={customizeFilter}
+              getPopupContainer={() => document.querySelector('#app-content')}
+            >
+              {recognitionProvidedOptions.map((option) => (
+                <Option
+                  key={option.value}
+                  title={option.title}
+                  label={option.label}
+                  value={option.value}
+                >
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Sprint # */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '14px',
+                color: '#333',
+              }}
+            >
+              Sprint # <span style={{ color: 'red' }}>*</span>
+            </label>
+            <Select
+              showSearch
+              highlightOption
+              style={{ width: '100%' }}
+              placeholder="Select an option"
+              onChange={(value) => handleInputChange('sprint', value)}
+              optionLabelProp="label"
+              customizeFilter={customizeFilter}
+              getPopupContainer={() => document.querySelector('#app-content')}
+            >
+              {sprintOptions.map((option) => (
+                <Option
+                  key={option.value}
+                  title={option.title}
+                  label={option.label}
+                  value={option.value}
+                >
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Role */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '14px',
+                color: '#333',
+              }}
+            >
+              Role <span style={{ color: 'red' }}>*</span>
+            </label>
+            <Select
+              showSearch
+              highlightOption
+              style={{ width: '100%' }}
+              placeholder="Select an option"
+              onChange={(value) => handleInputChange('role', value)}
+              optionLabelProp="label"
+              customizeFilter={customizeFilter}
+              getPopupContainer={() => document.querySelector('#app-content')}
+            >
+              {roleOptions.map((option) => (
+                <Option
+                  key={option.value}
+                  title={option.title}
+                  label={option.label}
+                  value={option.value}
+                >
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Attachments */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '14px',
+                color: '#333',
+              }}
+            >
+              Attachments
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Button style={{ padding: '5px 10px' }}>
+                <label style={{ cursor: 'pointer' }}>
+                  Choose file
+                  <input
+                    type="file"
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                </label>
+              </Button>
+              <span style={{ fontSize: '14px', color: '#666' }}>
+                {formData.attachment ? formData.attachment.name : 'No file chosen'}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Domain Filter */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: '#666' }}>
-          Domain
-        </label>
-        <Select
-          showSearch
-          highlightOption
-          style={{ width: '100%' }}
-          placeholder="Select a domain"
-          onChange={(value) => onChange('domain', value)}
-          optionLabelProp="label"
-          customizeFilter={customizeFilter}
-          getPopupContainer={() => document.querySelector('#app-content')}
-        >
-          {domainOptions.map((option) => (
-            <Option
-              key={option.value}
-              title={option.title}
-              label={option.label}
-              value={option.value}
-            >
-              {option.label}
-            </Option>
-          ))}
-        </Select>
-      </div>
-
-      {/* TPM Filter */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: '#666' }}>
-          TPM
-        </label>
-        <Select
-          showSearch
-          highlightOption
-          style={{ width: '100%' }}
-          placeholder="Select a TPM"
-          onChange={(value) => onChange('tpm', value)}
-          optionLabelProp="label"
-          customizeFilter={customizeFilter}
-          getPopupContainer={() => document.querySelector('#app-content')}
-        >
-          {tpmOptions.map((option) => (
-            <Option
-              key={option.value}
-              title={option.title}
-              label={option.label}
-              value={option.value}
-            >
-              {option.label}
-            </Option>
-          ))}
-        </Select>
-      </div>
-
-      {/* Issue Type Filter */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: '#666' }}>
-          Issue Type
-        </label>
-        <Select
-          showSearch
-          highlightOption
-          style={{ width: '100%' }}
-          placeholder="Select an issue type"
-          onChange={(value) => onChange('issueType', value)}
-          optionLabelProp="label"
-          customizeFilter={customizeFilter}
-          getPopupContainer={() => document.querySelector('#app-content')}
-        >
-          {issueTypeOptions.map((option) => (
-            <Option
-              key={option.value}
-              title={option.title}
-              label={option.label}
-              value={option.value}
-            >
-              {option.label}
-            </Option>
-          ))}
-        </Select>
-      </div>
-
-      {/* Capability Filter */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: '#666' }}>
-          Capability
-        </label>
-        <Select
-          showSearch
-          highlightOption
-          style={{ width: '100%' }}
-          placeholder="Select a capability"
-          onChange={(value) => onChange('capability', value)}
-          optionLabelProp="label"
-          customizeFilter={customizeFilter}
-          getPopupContainer={() => document.querySelector('#app-content')}
-        >
-          {capabilityOptions.map((option) => (
-            <Option
-              key={option.value}
-              title={option.title}
-              label={option.label}
-              value={option.value}
-            >
-              {option.label}
-            </Option>
-          ))}
-        </Select>
-      </div>
-
-      {/* Product Owner Filter */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: '#666' }}>
-          Product Owner
-        </label>
-        <Select
-          showSearch
-          highlightOption
-          style={{ width: '100%' }}
-          placeholder="Select a product owner"
-          onChange={(value) => onChange('productOwner', value)}
-          optionLabelProp="label"
-          customizeFilter={customizeFilter}
-          getPopupContainer={() => document.querySelector('#app-content')}
-        >
-          {productOwnerOptions.map((option) => (
-            <Option
-              key={option.value}
-              title={option.title}
-              label={option.label}
-              value={option.value}
-            >
-              {option.label}
-            </Option>
-          ))}
-        </Select>
+      {/* Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+        <Button onClick={handleCancel} style={{ background: 'transparent', border: '1px solid #666' }}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} style={{ background: '#005ea2', color: '#fff', border: 'none' }}>
+          Save
+        </Button>
       </div>
     </Card>
   );
