@@ -22,7 +22,7 @@
     "recharts": "^2.12.2",
     "sentiment": "^5.0.2",
     "sentimental": "^0.1.2",
-    "three": "^0.173.0",
+    "three": "^0.174.0",
     "wink-sentiment": "^5.0.2",
     "xlsx": "^0.18.5"
   },
